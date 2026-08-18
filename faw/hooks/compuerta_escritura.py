@@ -80,13 +80,36 @@ def _destino(entrada: dict) -> str:
     return ti.get("file_path") or ti.get("notebook_path") or ""
 
 
+def _fuera_del_repo(repo: Path, destino: str) -> bool:
+    """
+    FAW gobierna el repo, no el disco.
+
+    Un archivo cuyo destino cae afuera de la raiz del repo no es un artefacto del
+    proyecto, asi que la compuerta no le aplica. Sin esta comprobacion cualquier
+    escritura a una ruta externa queda bloqueada solo porque el proceso tiene su
+    cwd en un repo gobernado — bloquear una nota personal o un script temporal no
+    protege nada y hace que la compuerta parezca arbitraria.
+
+    Si no hay destino legible se devuelve False: no se puede decidir a favor, y
+    ante la duda se sigue evaluando.
+    """
+    if not destino:
+        return False
+    try:
+        Path(destino).resolve().relative_to(repo.resolve())
+    except (ValueError, OSError):
+        return True
+    return False
+
+
 def _es_libre(repo: Path, destino: str) -> bool:
+    """Rutas del propio metodo (recibos, estado): se pueden escribir siempre."""
     if not destino:
         return False
     try:
         rel = Path(destino).resolve().relative_to(repo.resolve()).as_posix()
     except (ValueError, OSError):
-        return False  # fuera del repo: no es un recibo del metodo
+        return False  # lo de afuera del repo lo resuelve _fuera_del_repo
     return any(rel == p or rel.startswith(p + "/") for p in PREFIJOS_LIBRES)
 
 
@@ -111,6 +134,8 @@ def main() -> int:
         return 0
 
     destino = _destino(entrada)
+    if _fuera_del_repo(repo, destino):
+        return 0
     if _es_libre(repo, destino):
         return 0
 
