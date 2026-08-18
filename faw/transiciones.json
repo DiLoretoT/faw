@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "_nota": "Las compuertas de fuerza 'maquina' las verifica un script y no se pueden satisfacer declarandolas. Las de fuerza 'recibo' exigen que exista un archivo. Las de fuerza 'declaracion' son el registro del agente: la maquina exige que la afirmacion exista antes del movimiento, no que sea cierta.",
+
+  "compuertas": {
+    "perfil":               { "fuerza": "recibo",      "verifica": "existe docs/faw/<ticket>/perfilado.md con consultas" },
+    "contrato":             { "fuerza": "recibo",      "verifica": "scripts/verificar_contrato.py <contrato>.yml --solo-sintaxis — por CADA tabla del ticket; con mas de una, declarar el alcance al mover: --compuerta tablas=t1,t2,..." },
+    "brief":                { "fuerza": "maquina",     "verifica": "scripts/verificar_brief.py" },
+    "plataforma":           { "fuerza": "maquina",     "verifica": "scripts/verificar_plataforma.py — ademas la corre el hook de pre-commit sobre el diff staged, asi que no esta atada a una arista del grafo" },
+    "aserciones":           { "fuerza": "declaracion", "verifica": "registro del agente" },
+    "autorizacion":         { "fuerza": "declaracion", "verifica": "registro del agente" },
+    "esquema":              { "fuerza": "maquina",     "verifica": "scripts/verificar_contrato.py <contrato>.yml --esquema <snapshot>.json — por CADA tabla del ticket; con mas de una, declarar el alcance al mover: --compuerta tablas=t1,t2,..." },
+    "modelo":               { "fuerza": "maquina",     "verifica": "scripts/verificar_modelo.py" },
+    "reporte":              { "fuerza": "maquina",     "verifica": "scripts/verificar_reporte.py" },
+    "reconciliacion":       { "fuerza": "declaracion", "verifica": "registro del agente, con responsable nombrado" },
+    "metadata":             { "fuerza": "maquina",     "verifica": "scripts/verificar_diff.py" },
+    "git-limpio":           { "fuerza": "maquina",     "verifica": "git status --porcelain vacio" },
+    "confirmacion_usuario": { "fuerza": "declaracion", "verifica": "el usuario dio el OK explicito en este punto de control" }
+  },
+
+  "_nota_checkpoints": "confirmacion_usuario marca los 3 puntos de proceso donde el agente PARA y espera (fin de CLASIFICACION, fin de DISENO, fin de VALIDACION). Las demas transiciones avanzan solas apenas sus propias compuertas pasan, mostrando un resumen pero sin esperar OK de proceso. Las autorizaciones de escritura al tenant (compuerta 'autorizacion') son un gate aparte y se piden siempre, no cuentan contra este recorte.",
+
+  "sin_abandono": ["PUBLICACION"],
+
+  "comun": {
+    "IDLE->CLASIFICACION": { "compuertas": [] }
+  },
+
+  "tiers": {
+    "ARTEFACTO": {
+      "CLASIFICACION->PERFILADO":      { "compuertas": ["confirmacion_usuario"], "_checkpoint": "1 de 3 — fin de CLASIFICACION" },
+      "PERFILADO->DISENO":        { "compuertas": ["perfil"], "_checkpoint": null },
+      "DISENO->CONSTRUCCION":     { "compuertas": ["contrato", "confirmacion_usuario"], "_checkpoint": "2 de 3 — fin de DISENO, antes de construir" },
+      "CONSTRUCCION->VALIDACION": { "compuertas": ["aserciones", "autorizacion"], "_checkpoint": null },
+      "VALIDACION->PUBLICACION":  { "compuertas": ["esquema", "confirmacion_usuario"], "_checkpoint": "3 de 3 — fin de VALIDACION, antes de publicar" },
+      "PUBLICACION->IDLE":        { "compuertas": ["metadata", "git-limpio"] },
+      "DISENO->PERFILADO":        { "compuertas": [] },
+      "VALIDACION->CONSTRUCCION": { "compuertas": [] }
+    },
+
+    "MODELO": {
+      "_nota": "Modelo semantico: tablas, relaciones, medidas, storage mode. Un error de storage mode, de relacion o de summarizeBy no se ve al construir, se ve en el numero que el usuario final lee, y para entonces ya se publico. De ahi el rigor de compuertas en este tier.",
+      "CLASIFICACION->PERFILADO":      { "compuertas": ["confirmacion_usuario"], "_checkpoint": "1 de 3 — fin de CLASIFICACION" },
+      "PERFILADO->DISENO":        { "compuertas": ["perfil"], "_checkpoint": null },
+      "DISENO->CONSTRUCCION":     { "compuertas": ["contrato", "confirmacion_usuario"], "_checkpoint": "2 de 3 — fin de DISENO, antes de construir" },
+      "CONSTRUCCION->VALIDACION": { "compuertas": ["autorizacion"], "_checkpoint": null },
+      "VALIDACION->PUBLICACION":  { "compuertas": ["modelo", "reconciliacion", "confirmacion_usuario"], "_checkpoint": "3 de 3 — fin de VALIDACION, antes de publicar" },
+      "PUBLICACION->IDLE":        { "compuertas": ["metadata", "git-limpio"] },
+      "DISENO->PERFILADO":        { "compuertas": [] },
+      "VALIDACION->CONSTRUCCION": { "compuertas": [] }
+    },
+
+    "REPORTE": {
+      "_nota": "La CONSTRUCCION es libre —layout, eleccion de visual y jerarquia no son verificables por maquina— pero ENTRAR a construir no lo es: 'construccion libre' no es 'no hace falta acordar nada'. Sin objetivo y audiencia acordados con el usuario, el alcance termina deduciendose del modelo semantico en vez de decidirse. La compuerta 'brief' cierra eso, alineada con powerbi-report-planning de Microsoft (Define -> Inspect -> Spec -> Approve -> Build). El fallo silencioso de esta capa sigue siendo el filtro de desarrollo olvidado y persistido en el PBIR: numeros creibles y filtrados.",
+      "CLASIFICACION->CONSTRUCCION":    { "compuertas": ["brief", "confirmacion_usuario"], "_checkpoint": "1 de 2 — fin de CLASIFICACION, antes de construir" },
+      "CONSTRUCCION->PUBLICACION": { "compuertas": ["reporte", "reconciliacion", "confirmacion_usuario"], "_checkpoint": "2 de 2 — antes de publicar" },
+      "PUBLICACION->IDLE":         { "compuertas": ["git-limpio"] }
+    },
+
+    "INCIDENTE": {
+      "_nota": "Carril rapido, pero el perfilado del sintoma no es opcional: el diagnostico se mide, no se supone.",
+      "CLASIFICACION->PERFILADO":       { "compuertas": [] },
+      "PERFILADO->CONSTRUCCION":   { "compuertas": ["perfil"] },
+      "CONSTRUCCION->PUBLICACION": { "compuertas": ["aserciones", "autorizacion"] },
+      "PUBLICACION->IDLE":         { "compuertas": ["metadata", "git-limpio"] }
+    },
+
+    "CAMBIO-MENOR": {
+      "_nota": "Se reclasifica a ARTEFACTO si el cambio toca esquema, logica de negocio, capa de consumo, o supera ~30 lineas efectivas.",
+      "CLASIFICACION->CONSTRUCCION":    { "compuertas": [] },
+      "CONSTRUCCION->PUBLICACION": { "compuertas": ["aserciones"] },
+      "PUBLICACION->IDLE":         { "compuertas": ["metadata", "git-limpio"] },
+      "CLASIFICACION->PERFILADO":       { "compuertas": [], "_nota": "salida de reclasificacion a ARTEFACTO" }
+    },
+
+    "EXPLORACION": {
+      "_nota": "Prohibido escribir en el tenant. Produce un documento.",
+      "CLASIFICACION->PERFILADO": { "compuertas": [] },
+      "PERFILADO->IDLE":     { "compuertas": ["perfil", "git-limpio"] }
+    },
+
+    "CONSULTA": {
+      "_nota": "Sin fases. Se responde con fuentes. Si aparece que hay que tocar algo, se reclasifica antes de tocar nada.",
+      "CLASIFICACION->IDLE": { "compuertas": [] }
+    }
+  },
+
+  "_nota_reanudar": "Reanudar un trabajo pausado reentra en la fase en la que se pauso. No hay lista de fases reanudables: la prueba es la pausa misma. La entrada anterior tiene que ser un 'pausa:' terminando en IDLE, y la fase desde la que pauso es la unica que la reanudacion puede reentrar."
+}

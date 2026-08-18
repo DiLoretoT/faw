@@ -1,0 +1,14 @@
+{
+  "name": "faw",
+  "description": "FAW empaquetado para Claude Code. Un plugin: una maquina de estados para trabajo de datos sobre Fabric, con compuertas aplicadas fuera del modelo.",
+  "owner": {
+    "name": "Tomas Di Loreto"
+  },
+  "plugins": [
+    {
+      "name": "faw",
+      "source": "./",
+      "description": "FAW — Fabric Agentic Workflow: fases en orden, compuertas que verifican esquema, modelo, brief y literales de plataforma, un validador que no construyo lo que revisa, y estado que sobrevive cerrar la sesion."
+    }
+  ]
+}

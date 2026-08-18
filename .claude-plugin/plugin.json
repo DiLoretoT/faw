@@ -1,0 +1,19 @@
+{
+  "name": "faw",
+  "displayName": "FAW — Fabric Agentic Workflow",
+  "version": "2.1.0",
+  "description": "Metodo con fases y compuertas para trabajo de datos sobre Microsoft Fabric. El fallo caracteristico de una plataforma de datos no es un error: es un numero creible y falso. Las compuertas se aplican con hooks, fuera del modelo.",
+  "author": {
+    "name": "Tomas Di Loreto"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "fabric",
+    "power-bi",
+    "data-platform",
+    "agentic",
+    "workflow",
+    "data-quality"
+  ],
+  "hooks": "./adapters/claude/plugin-hooks.json"
+}

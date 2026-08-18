@@ -1,0 +1,25 @@
+{
+  "_comentario": "Alternativa manual al plugin: fusionar dentro de .claude/settings.json del proyecto de trabajo (no de FAW) SOLO si no se instala FAW como plugin — el plugin ya registra estos hooks. El bloque 'hooks' en si se versiona con el repo sin problema. Lo que SI es por maquina es la ruta a FAW — reemplazar <ruta-de-faw> por la ruta real del clon en cada maquina.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python <ruta-de-faw>/faw/hooks/pre_commit_metadata.py"
+          }
+        ]
+      },
+      {
+        "matcher": "PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python <ruta-de-faw>/faw/hooks/pre_commit_metadata.py"
+          }
+        ]
+      }
+    ]
+  }
+}

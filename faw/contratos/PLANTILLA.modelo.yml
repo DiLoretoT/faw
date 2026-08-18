@@ -1,0 +1,93 @@
+# Modelo semántico esperado — plantilla
+#
+# Se completa en DISEÑO, antes de armar el modelo. Es la entrada de la compuerta
+# `modelo`: scripts/verificar_modelo.py compara la definición real contra esto.
+#
+# El punto no es documentar lo que quedó. Es declarar lo que tiene que quedar,
+# antes, para que después alguien pueda confrontarlo. Declarar después de mirar
+# el modelo es copiar la respuesta.
+
+modelo: SM_Ejemplo
+workspace: "[DEV] Dominio BI"
+
+# directlake_onelake | directlake_sql | import | directquery
+#
+# Verifica el conector real en las expresiones M. Sirve para atrapar el caso de
+# haber querido Direct Lake on OneLake y haber salido on SQL por usar el botón
+# equivocado — los dos se llaman "Direct Lake" en la interfaz.
+modo: directlake_onelake
+
+tablas:
+  - fact_ejemplo
+  - dim_tercero
+  - dim_fecha_evento
+  - dim_fecha_registro
+
+# ---------------------------------------------------------------------------
+# Relaciones. Nombrar la columna de los dos lados, siempre.
+#
+# El diagrama del modelo dibuja una línea entre dos tablas pero no muestra a qué
+# columna llega. Un error acá es invisible en la vista que uno usa para revisarlo.
+# ---------------------------------------------------------------------------
+relaciones:
+  - desde_tabla: dim_fecha_evento
+    desde_columna: fecha_evento
+    hacia_tabla: fact_ejemplo
+    hacia_columna: fecha_evento
+    activa: true
+
+  - desde_tabla: dim_fecha_registro
+    desde_columna: fecha_registro
+    hacia_tabla: fact_ejemplo
+    hacia_columna: fecha_registro
+    activa: true
+
+  - desde_tabla: dim_tercero
+    desde_columna: tercero_key
+    hacia_tabla: fact_ejemplo
+    hacia_columna: tercero_key
+    activa: true
+
+# ---------------------------------------------------------------------------
+# Propiedades de columna. Solo las que importan; no hace falta listar todas.
+#
+# `sumarizar: none` en columnas numéricas que son claves o discriminadores:
+# Power BI las suma por defecto y muestra totales sin sentido.
+# `ordenar_por` en las categóricas con orden propio: sin eso, "+90 días" va primero.
+# ---------------------------------------------------------------------------
+columnas:
+  - tabla: fact_ejemplo
+    columna: numero_linea
+    sumarizar: none
+
+  - tabla: fact_ejemplo
+    columna: signo_contable
+    sumarizar: none
+
+  - tabla: fact_ejemplo
+    columna: tramo
+    ordenar_por: tramo_orden
+
+# ---------------------------------------------------------------------------
+# Medidas que tienen que existir. Verifica presencia, no corrección del DAX.
+# ---------------------------------------------------------------------------
+medidas:
+  - Saldo Pendiente
+  - Comprobantes
+  - "% del Total"
+
+# ---------------------------------------------------------------------------
+# Reconciliación: el número que el modelo tiene que reproducir, y contra qué.
+#
+# Esto NO lo verifica el script — es la compuerta `reconciliacion`, de
+# declaración. Se escribe acá para que quede nombrado quién tiene que confirmar,
+# en vez de que la corrección de negocio quede como un supuesto de nadie.
+# ---------------------------------------------------------------------------
+reconciliacion:
+  medida: Saldo Pendiente
+  valor_esperado: null
+  fuente: reporte original del ERP
+  confirma: null          # nombre del referente del negocio
+  estado: pendiente       # pendiente | confirmado | con_diferencia
+  nota: >
+    Mientras esté pendiente, el modelo no se publica al negocio como definitivo.
