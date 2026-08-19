@@ -1,7 +1,7 @@
 {
   "name": "faw",
   "displayName": "FAW — Fabric Agentic Workflow",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "A phased workflow with enforced gates for data work on Microsoft Fabric, built for Claude Code. The gates are applied by hooks, outside the model, and cover writes made through MCP servers.",
   "author": {
     "name": "Tomas Di Loreto"
