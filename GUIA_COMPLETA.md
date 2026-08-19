@@ -243,15 +243,27 @@ Los catorce, en una línea cada uno: evidencia antes que declaración; validar e
 
 ---
 
-## 12. Las decisiones de plataforma
+## 12. Las decisiones que se toman solas
 
-Hay decisiones que aparecen en todo proyecto de Fabric y que casi nunca se plantean de forma explícita: se heredan del valor por defecto de un diálogo o de lo que se hizo la vez anterior. Un default que nadie eligió es una decisión que tomó la herramienta.
+Todo artefacto que se construye deja decisiones de arquitectura fijadas, se hayan discutido o no. Cuando no se discuten, las toma el valor por defecto de un diálogo, la costumbre del proyecto anterior, o el primer camino que apareció. Siguen siendo decisiones; lo que cambia es que nadie puede explicar por qué se tomaron ni qué se descartó.
 
-La fase de diseño obliga a plantearlas, decidirlas y justificarlas, **incluso cuando el usuario no pregunta y aunque no conozca el tema**, porque la consecuencia de equivocarlas la paga igual. La más cara de revertir es el modo de almacenamiento del modelo semántico, donde la elección entre importación, Direct Lake y consulta directa depende del volumen, de la frecuencia de cambio y de la latencia que tolera quien consume.
+El método no resuelve esto con una lista de temas obligatorios. Lo resuelve con una pregunta que la fase de diseño obliga a hacerse: **qué decisiones va a dejar fijadas este trabajo, y cuáles de ellas el usuario todavía no discutió.** Las que aparecen se ponen sobre la mesa; después él decide si quiere revisarlas o seguir con el default. Lo que no debe pasar es que se entere cuando ya es cara de revertir.
 
-El método no reemplaza la documentación oficial en esto, y no debería: las capacidades y los límites cambian entre releases, y una recomendación basada en lo que se sabía hace seis meses puede estar equivocada hoy. Lo que el método aporta es la obligación de plantear la decisión y de respaldarla con documentación leída y fechada. Detalle en la skill de diseño.
+El criterio para saber cuáles sacar a la luz: si cambiarla dentro de tres meses obligaría a reconstruir algo, se plantea ahora; si es reversible con un commit, no hace falta.
 
-Cuando el diseño no tiene la información necesaria para cerrarse, no se avanza a fuerza de supuestos: se abre una consulta acotada a resolver esas dudas, y su resultado se pasa como contexto al abrir el trabajo real. Al abrirlo no se vuelve a preguntar lo que el usuario ya contestó.
+Esa revisión se ofrece aunque el usuario no la haya pedido y aunque no conozca el tema, porque la consecuencia de equivocarla la paga igual. Cuando no tiene criterio formado no se elige por él en silencio ni se le da una clase teórica: se explica qué implica cada opción para ese caso concreto, se recomienda una con su fundamento, y se sigue.
+
+Dónde suelen esconderse, como orientación y no como checklist: el modo de almacenamiento del modelo semántico, el grano de cada tabla de hechos, dónde se resuelve cada cálculo derivado, si las claves son naturales o sustitutas, dónde viven las dimensiones compartidas, si la carga es completa o incremental, y la convención de nombres.
+
+El método no reemplaza la documentación oficial en ninguna de ellas, y no debería: las capacidades y los límites cambian entre releases, y una recomendación basada en lo que se sabía hace seis meses puede estar equivocada hoy y sonar igual de segura. Lo que el método aporta es la obligación de plantear la decisión y de respaldarla con documentación leída y fechada.
+
+El hook de contexto recuerda esta revisión en cada turno de la fase de diseño, así que no depende de que alguien se acuerde de abrir la skill.
+
+### Cuando falta información para decidir
+
+Si el diseño no tiene los datos necesarios para cerrarse —falta entender el origen, falta una definición de negocio, falta medir algo— no se avanza a fuerza de supuestos. Se abre una consulta acotada a resolver esas dudas, que produce un documento, y ese documento se pasa al abrir el trabajo real con `--contexto`.
+
+El hook inyecta esa ruta en cada turno mientras el trabajo esté abierto, para que el agente la lea **antes** de preguntar. El punto es que la información no se pierda entre una conversación y la otra: al abrir el trabajo real no se vuelve a preguntar lo que el usuario ya contestó, se le reconfirma en una línea y se le piden solo los datos nuevos.
 
 ---
 

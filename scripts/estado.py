@@ -260,6 +260,16 @@ def cmd_iniciar(a) -> int:
               file=sys.stderr)
         return 1
 
+    if a.contexto and not (RAIZ / a.contexto).exists():
+        # El hook inyecta esta ruta en cada turno para que el agente la lea antes
+        # de preguntar. Una ruta que no existe manda a leer la nada y hace que se
+        # vuelva a preguntar lo que el usuario ya contesto, que es exactamente lo
+        # que el contexto previo existe para evitar.
+        print(f"El documento de contexto '{a.contexto}' no existe.\n"
+              f"Se declara la ruta del documento que produjo la consulta previa, "
+              f"relativa a la raiz del repo.", file=sys.stderr)
+        return 1
+
     if sistema == "interno" and not tickets_mod.ruta(RAIZ, ticket).exists():
         tickets_mod.crear(RAIZ, ticket, a.titulo, a.tier)
 

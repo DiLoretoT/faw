@@ -45,11 +45,26 @@ LINEA_ESTADO = (
     "o `{TIER} - {accion} | {ticket}: {titulo}` cuando hay trabajo abierto."
 )
 
-# Skill oficial de Microsoft que gobierna la mecanica, por tier. FAW manda en
-# proceso; estas mandan en como se hace el artefacto. Ver reglas/skills-microsoft.md.
+# Que skill oficial de la plataforma gobierna la mecanica de cada tipo de
+# artefacto. Se nombra el tema y no la ruta: el repositorio de Microsoft
+# reorganiza sus carpetas entre versiones, y una ruta escrita aca mandaria a leer
+# un archivo que ya no existe. FAW manda en proceso; esas skills en mecanica.
+SKILL_MS_POR_ARTEFACTO = {
+    "notebook": "la skill de Spark",
+    "lakehouse": "la skill de Spark",
+    "tabla": "la skill de Spark",
+    "modelo-semantico": "la skill de autoria de modelo semantico",
+    "reporte": "las skills de planificacion y autoria de reportes",
+    "pipeline": "la skill de pipelines de datos",
+    "dataflow": "la skill de dataflows",
+    "warehouse": "la skill de warehouse",
+}
+
+# Sin `--artefacto` declarado se cae al tier, que es menos preciso pero cubre los
+# dos casos donde el tier ya identifica el artefacto.
 SKILL_MS_POR_TIER = {
-    "REPORTE": "powerbi-report-planning (si el reporte es nuevo) y despues powerbi-report-authoring",
-    "MODELO": "semantic-model-authoring",
+    "REPORTE": "las skills de planificacion y autoria de reportes",
+    "MODELO": "la skill de autoria de modelo semantico",
 }
 
 REGLA_POR_FASE = {
@@ -57,8 +72,10 @@ REGLA_POR_FASE = {
                 "No construir nada todavia. Cierra con confirmacion del usuario.",
     "PERFILADO": "Solo lectura. Cada numero va con la consulta que lo produjo. "
                  "La clave natural se prueba, no se copia de una ficha.",
-    "DISENO": "Grano en una frase, clave natural verificada, contrato .yml. "
-              "Cierra con confirmacion del usuario ANTES de construir.",
+    "DISENO": "Grano en una frase, clave natural verificada, contrato .yml. Antes de cerrar, "
+              "revisar que decisiones de arquitectura quedan implicitas en lo que se va a "
+              "construir y proponerlas al usuario: las que no se discuten las decide el default "
+              "de la herramienta. Cierra con confirmacion del usuario ANTES de construir.",
     "CONSTRUCCION": "PASO 0: si el artefacto tiene skill oficial de Microsoft, leerla ANTES de "
                     "escribir una linea. Validaciones adentro del artefacto. Reportar filas Y columnas.",
     "VALIDACION": "La ejecuta faw-validador, que no construyo. Busca refutar, no confirmar. "
@@ -69,19 +86,41 @@ REGLA_POR_FASE = {
 
 
 def _estado(repo: Path) -> dict | None:
-    """Ultima entrada de la maquina de estados, o None si no hay trabajo abierto."""
+    """Estado vigente del trabajo abierto, o None si no hay ninguno.
+
+    El archivo es un log de eventos: la fase vigente esta en la ultima linea, pero
+    lo que se declaro al abrir el trabajo —el tipo de artefacto, el documento de
+    contexto previo— solo esta en la linea del `iniciar`. Leer unicamente la
+    ultima entrada hace que esos datos existan durante la primera fase y
+    desaparezcan en cuanto se avanza, que es peor que no tenerlos: se declaran una
+    vez y dejan de aplicarse sin que nadie lo note.
+
+    Por eso se combina la ultima entrada con la del `iniciar` del mismo ticket,
+    en vez de exigir que cada transicion arrastre todos los campos.
+    """
     f = repo / ".faw" / "estado.jsonl"
     if not f.exists():
         return None
-    ultima = None
+
+    entradas = []
     for linea in f.read_text(encoding="utf-8", errors="replace").splitlines():
         linea = linea.strip()
         if not linea:
             continue
         try:
-            ultima = json.loads(linea)
+            entradas.append(json.loads(linea))
         except json.JSONDecodeError:
             continue
+    if not entradas:
+        return None
+
+    ultima = entradas[-1]
+    ticket = ultima.get("ticket")
+    for e in reversed(entradas):
+        if e.get("evento") == "iniciar" and e.get("ticket") == ticket:
+            combinado = dict(e)
+            combinado.update({k: v for k, v in ultima.items() if v is not None})
+            return combinado
     return ultima
 
 
@@ -146,9 +185,21 @@ def main() -> int:
         regla = REGLA_POR_FASE.get(fase)
         if regla:
             lineas.append(f"Fase {fase}: {regla}")
-        skill = SKILL_MS_POR_TIER.get(tier or "")
-        if skill and fase == "CONSTRUCCION":
-            lineas.append(f"Skill oficial de Microsoft para este tier: {skill}.")
+
+        # El documento de una consulta previa ya tiene decisiones cerradas con el
+        # usuario. Se nombra la ruta y no se vuelca el contenido: el punto es que
+        # el agente lo lea en vez de volver a preguntar lo que ya se contesto.
+        contexto_previo = (st or {}).get("contexto")
+        if contexto_previo:
+            lineas.append(f"Contexto ya acordado con el usuario en {contexto_previo}: "
+                          f"leerlo antes de preguntar nada que pueda estar ahi.")
+
+        artefacto = (st or {}).get("artefacto")
+        skill = (SKILL_MS_POR_ARTEFACTO.get((artefacto or "").lower())
+                 or SKILL_MS_POR_TIER.get(tier or ""))
+        if skill and fase in ("DISENO", "CONSTRUCCION"):
+            lineas.append(f"Mecanica de plataforma: leer {skill} del repositorio oficial "
+                          f"antes de escribir.")
         salidas = _salidas(tier or "", fase)
         if salidas:
             lineas.append(f"Salidas legales: {salidas}")

@@ -17,37 +17,33 @@ El objetivo no es producir un documento: es que cada decisión que la solución 
 4. **Las decisiones de plataforma**, abajo.
 5. **La confirmación del usuario**, que es la compuerta de salida de la fase.
 
-## Las decisiones de plataforma
+## Las decisiones que se toman solas si nadie las mira
 
-Estas decisiones aparecen en todo proyecto de Fabric y casi nunca se plantean de forma explícita: se heredan del default de un diálogo o de lo que se hizo la vez anterior. Un default que nadie eligió es una decisión que tomó la herramienta.
+Todo artefacto que se construye deja decisiones de arquitectura tomadas, se hayan discutido o no. Cuando no se discuten, las toma el valor por defecto de un diálogo, la costumbre del proyecto anterior, o el primer camino que apareció. Un default que nadie eligió sigue siendo una decisión, con la diferencia de que nadie puede explicar por qué se tomó ni qué se descartó.
 
-**La regla de esta skill: cada una de estas decisiones se plantea, se decide y se justifica, incluso cuando la respuesta parece obvia.** Se le ofrece al usuario el análisis aunque no lo haya pedido y aunque no conozca el tema, porque la consecuencia de equivocarla la paga igual.
+**Lo que esta skill obliga a hacer no es decidir una lista fija de temas.** Es preguntarse, antes de construir, qué decisiones va a dejar fijadas este trabajo, y poner sobre la mesa las que el usuario todavía no discutió. Después él decide si quiere revisarlas o seguir con el default: lo que no puede pasar es que se entere de la decisión cuando ya es cara de revertir.
 
-### Modo de almacenamiento del modelo semántico
+El criterio para saber cuáles sacar a la luz: **si cambiarla dentro de tres meses obligaría a reconstruir algo, se plantea ahora.** Si es reversible con un commit, no hace falta.
 
-Es la decisión más cara de revertir de un modelo. Las opciones son Import, Direct Lake y DirectQuery, y la elección depende de tres cosas: el volumen de datos, con qué frecuencia cambian, y cuánta latencia tolera quien consume el reporte.
+La conversación se ofrece aunque el usuario no la haya pedido y aunque no conozca el tema. Cuando no tiene criterio formado, no se elige por él en silencio ni se le vuelca una clase teórica: se explica en dos o tres frases qué implica cada opción **para este caso concreto**, se recomienda una con su fundamento, y se sigue.
 
-Antes de recomendar una, **leer la documentación oficial vigente** y citar la fecha de la página. Las capacidades y los límites de Direct Lake en particular cambian entre releases, así que una recomendación basada en lo que se sabía hace seis meses puede estar equivocada hoy.
+### Dónde suelen esconderse
 
-Las restricciones que conviene tener presentes al plantear la decisión, y confirmar contra la documentación en cada caso:
+No es una lista para recorrer entera en cada trabajo. Es dónde mirar para detectar qué aplica al artefacto que se está por construir.
 
-- **Direct Lake no soporta columnas calculadas.** Todo cálculo que se pensaba resolver como columna en el modelo tiene que resolverse aguas arriba, en la tabla, o expresarse como medida.
-- **La seguridad a nivel de fila u objeto sobre las tablas de origen afecta el modo.** Un modelo Direct Lake que consume tablas con esas reglas aplicadas puede degradarse a DirectQuery o directamente fallar la consulta, según por dónde acceda a los datos. Si el diseño incluye seguridad por filas, la interacción con el modo de almacenamiento se verifica **antes** de construir, no cuando el visual aparezca vacío.
-- **Direct Lake tiene límites de tamaño y de estructura de los archivos** que dependen del tipo de capacidad. Un modelo que los supera vuelve a DirectQuery sin avisar de forma evidente.
-
-Cuando el usuario no tiene criterio formado sobre esto, la skill no elige por él en silencio: explica en dos o tres frases qué implica cada opción **para este caso concreto** —no en abstracto— y recomienda una con su fundamento.
-
-### Dónde se resuelve cada cálculo
-
-Para cada campo derivado, decidir si se materializa aguas arriba en la tabla o se expresa como medida en el modelo. El default es aguas arriba, y las excepciones son legítimas: un cálculo que depende del contexto de filtro del usuario tiene que ser una medida. El principio 5 desarrolla el criterio.
-
-### El resto de las decisiones que se arrastran
-
-- **Grano de cada tabla de hechos**, y si hace falta más de uno.
+- **Modo de almacenamiento del modelo semántico.** La más cara de revertir cuando hay un modelo de por medio. Depende del volumen, de la frecuencia con que cambian los datos y de la latencia que tolera quien consume. Tiene además interacciones que conviene verificar antes y no después: Direct Lake no admite columnas calculadas, y la seguridad a nivel de fila sobre las tablas de origen puede cambiar el comportamiento del modo elegido o hacer fallar la consulta.
+- **Grano** de cada tabla de hechos, y si hace falta más de uno.
+- **Dónde se resuelve cada cálculo derivado**: materializado aguas arriba o expresado como medida. El principio 5 desarrolla el criterio y sus excepciones.
 - **Claves sustitutas o naturales**, y qué pasa con las filas cuya clave no resuelve.
-- **Dónde viven las dimensiones compartidas** cuando hay más de un modelo que las usa.
+- **Dónde viven las dimensiones compartidas** cuando hay más de un modelo que las consume.
 - **Estrategia de carga**: completa o incremental. Si es incremental, cuál es la marca de agua y qué pasa cuando una corrida falla a la mitad.
-- **Convención de nombres**, que es barata de fijar al principio e imposible de cambiar después.
+- **Convención de nombres**, barata de fijar al principio e imposible de cambiar después.
+
+### Cómo se respalda una recomendación
+
+Toda afirmación determinante sobre la plataforma —"no se puede X", "conviene A sobre B", un límite de una feature— se respalda con documentación oficial leída, citando la fecha de la página. Las capacidades cambian entre releases, así que una recomendación basada en lo que se sabía hace seis meses puede estar equivocada hoy, y sonar igual de segura.
+
+Si la documentación no lo dice explícitamente, se declara como inferencia propia. Esa distinción es la diferencia entre un diseño fundado y uno que parece fundado.
 
 ## Cuando el diseño no está maduro para decidirse
 
