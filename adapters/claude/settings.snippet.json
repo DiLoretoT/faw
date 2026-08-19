@@ -1,22 +1,50 @@
 {
-  "_comment": "Manual alternative to the plugin: merge this into .claude/settings.json of the working project (not of FAW) ONLY if FAW is not installed as a plugin, since the plugin already registers these hooks. The 'hooks' block itself can be versioned with the repository. What is per-machine is the path to FAW: replace <faw> with the real path of the clone on each machine.",
+  "_comment": "Manual alternative to installing FAW as a plugin: merge this into .claude/settings.json of the WORKING project, not of FAW. Use it only if the plugin is not installed, because the plugin registers exactly these hooks and running both would double every check.",
+
+  "_keep_in_sync": "This file has to mirror adapters/claude/plugin-hooks.json. They are two declarations of the same set, so they can drift, and a partial copy is worse than none: it looks like FAW is enforcing the method while only part of it runs. If you add or rename a hook, change both.",
+
+  "_path": "Replace <faw> with the real path of the FAW clone on this machine. The plugin resolves this on its own through ${CLAUDE_PLUGIN_ROOT}; here it is manual.",
+
   "hooks": {
-    "PreToolUse": [
+    "UserPromptSubmit": [
       {
-        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "python <faw>/faw/hooks/commit_gate.py"
+            "command": "python <faw>/faw/hooks/inject_context.py"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python <faw>/faw/hooks/write_gate.py"
           }
         ]
       },
       {
-        "matcher": "PowerShell",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
             "command": "python <faw>/faw/hooks/commit_gate.py"
+          },
+          {
+            "type": "command",
+            "command": "python <faw>/faw/hooks/pr_gate.py"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python <faw>/faw/hooks/mcp_gate.py"
           }
         ]
       }
