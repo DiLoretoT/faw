@@ -1,0 +1,96 @@
+# Expected semantic model: template
+#
+# Filled in during DESIGN, before building the model. This is the input of the
+# `model` gate: scripts/verify_model.py compares the real definition against it.
+#
+# The point is not to document what ended up being built. It is to declare what has
+# to be built, beforehand, so that someone can confront it later. Declaring it
+# after looking at the model is copying the answer.
+
+model: SM_Example
+workspace: "[DEV] BI Domain"
+
+# directlake_onelake | directlake_sql | import | directquery
+#
+# The verifier checks the real connector in the query expressions. This catches
+# the case of intending Direct Lake on OneLake and ending up on SQL by pressing
+# the wrong button: both are called "Direct Lake" in the interface.
+mode: directlake_onelake
+
+tables:
+  - fact_example
+  - dim_party
+  - dim_event_date
+  - dim_record_date
+
+# ---------------------------------------------------------------------------
+# Relationships. Name the column on both sides, always.
+#
+# The model diagram draws a line between two tables but does not show which
+# column it lands on. A mistake here is invisible in the view you would use to
+# check it.
+# ---------------------------------------------------------------------------
+relationships:
+  - from_table: dim_event_date
+    from_column: event_date
+    to_table: fact_example
+    to_column: event_date
+    active: true
+
+  - from_table: dim_record_date
+    from_column: record_date
+    to_table: fact_example
+    to_column: record_date
+    active: true
+
+  - from_table: dim_party
+    from_column: party_key
+    to_table: fact_example
+    to_column: party_key
+    active: true
+
+# ---------------------------------------------------------------------------
+# Column properties. Only the ones that matter; there is no need to list them all.
+#
+# `summarize: none` on numeric columns that are keys or discriminators: they get
+# summed by default and produce totals that mean nothing.
+# `sort_by` on categorical columns with their own order: without it, "+90 days"
+# comes first alphabetically.
+# ---------------------------------------------------------------------------
+columns:
+  - table: fact_example
+    column: line_number
+    summarize: none
+
+  - table: fact_example
+    column: accounting_sign
+    summarize: none
+
+  - table: fact_example
+    column: bucket
+    sort_by: bucket_order
+
+# ---------------------------------------------------------------------------
+# Measures that have to exist. Presence is verified, not the correctness of the
+# expression.
+# ---------------------------------------------------------------------------
+measures:
+  - Outstanding Balance
+  - Documents
+  - "% of Total"
+
+# ---------------------------------------------------------------------------
+# Reconciliation: the number the model has to reproduce, and against what.
+#
+# The script does NOT verify this. It is the `reconciliation` gate, of declaration
+# strength. It is written here so that whoever has to confirm it is named, instead
+# of business correctness being left as nobody's assumption.
+# ---------------------------------------------------------------------------
+reconciliation:
+  measure: Outstanding Balance
+  expected_value: null
+  source: original report from the source system
+  confirmed_by: null      # name of the business owner
+  status: pending         # pending | confirmed | with_difference
+  note: >
+    While this is pending, the model is not published to the business as final.

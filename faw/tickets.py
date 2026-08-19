@@ -1,38 +1,37 @@
 #!/usr/bin/env python3
 """
-Registro de tickets interno: el gestor que existe cuando no hay ninguno.
+Internal ticket registry: the tracker that exists when there is no tracker.
 
-## Por que hace falta
+## Why it is needed
 
-El metodo necesita un identificador de trabajo para nombrar sus recibos y para
-que la pregunta "en que quedamos" tenga una respuesta que sobreviva cerrar la
-sesion. Ese identificador suele venir de un gestor externo, pero exigir uno
-convierte una herramienta de gestion en requisito de instalacion: quien no usa
-ninguno terminaria inventando identificadores para satisfacer al metodo, y un
-identificador inventado no remite a nada.
+The method needs a work identifier to name its receipts and to make the question
+"where were we" answerable after the session is closed. That identifier usually
+comes from an external tracker, but requiring one would turn a project
+management tool into an installation prerequisite: whoever does not use any
+would end up inventing identifiers to satisfy the method, and an invented
+identifier refers to nothing.
 
-Este modulo resuelve el caso sin depender de ningun servicio. El ticket es un
-archivo markdown en el repo de trabajo, y el historial lo aporta git: quien
-quiera saber como cambio el alcance de un trabajo lee el log del archivo. Eso es
-lo que un gestor externo ofrece y un archivo suelto no: rastro de las
-modificaciones.
+This module solves that case without depending on any service. A ticket is a
+markdown file in the working repository, and git provides the history: whoever
+wants to know how the scope of a piece of work changed reads the file log. That
+is what an external tracker offers and a loose file does not.
 
-## Que gana un proyecto que si tiene gestor
+## What a project with a tracker gains
 
-Nada de esto lo reemplaza. Si el perfil declara `ado`, `jira` o `github`, el
-identificador sale de ahi y este registro no se usa. La diferencia esta en si
-existe un servidor MCP para ese gestor: con MCP, el agente consulta y actualiza
-el ticket directamente; sin MCP, el gestor sigue siendo la fuente del
-identificador y el usuario opera la herramienta. En los dos casos el metodo
-funciona igual, porque lo unico que necesita de un ticket es su identificador.
+None of this replaces it. If the profile declares `ado`, `jira` or `github`, the
+identifier comes from there and this registry is unused. The difference is
+whether an MCP server exists for that tracker: with one, the agent reads and
+updates the ticket directly; without one, the tracker is still the source of the
+identifier and the user operates the tool. The method works the same either way,
+because the only thing it needs from a ticket is its identifier.
 
-## Por que los tickets se versionan y pasan por la compuerta de superficie
+## Why tickets are versioned and pass through the surface gate
 
-Un ticket contiene, por naturaleza, preguntas abiertas y tareas para personas
-del negocio. Es exactamente el contenido que no debe llegar a un repo que lee un
-tercero. Por eso el registro vive bajo `docs/faw/tickets/`, que la compuerta de
-superficie revisa, a diferencia del resto de `docs/faw/`. Si el destinatario del
-repo no debe leer los tickets, el proyecto declara otra raiz de artefactos.
+A ticket contains, by its nature, open questions and tasks assigned to people.
+That is exactly the content that should not reach a repository a third party
+reads. The registry lives under `docs/faw/tickets/`, which the surface gate does
+inspect, unlike the rest of `docs/faw/`. If the reader of the repository should
+not see tickets at all, the project declares a different artifact root.
 """
 
 from __future__ import annotations
@@ -41,116 +40,117 @@ import re
 from datetime import date
 from pathlib import Path
 
-DIR_TICKETS = Path("docs") / "faw" / "tickets"
+TICKETS_DIR = Path("docs") / "faw" / "tickets"
 
-ESTADOS = ("abierto", "en-curso", "pausado", "cerrado", "abandonado")
+STATES = ("open", "in-progress", "paused", "closed", "abandoned")
 
-# Un identificador termina siendo un nombre de directorio (`docs/faw/<id>/`). Los
-# caracteres que Windows prohibe en una ruta romperian la escritura del recibo
-# recien al final del trabajo, cuando ya no hay nada que hacer al respecto.
-RE_ID_VALIDO = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
-
-
-def sanitizar(identificador: str) -> str | None:
-    """Devuelve el identificador si sirve como nombre de ruta, o None."""
-    ident = (identificador or "").strip()
-    return ident if RE_ID_VALIDO.match(ident) else None
+# An identifier ends up as a directory name (`docs/faw/<id>/`). Characters that
+# Windows forbids in a path would break the receipt write at the end of the work,
+# when there is nothing left to do about it.
+VALID_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
 
-def _proximo_numero(repo: Path) -> int:
-    """Siguiente numero libre del registro interno.
+def sanitize(identifier: str) -> str | None:
+    """Return the identifier if it works as a path name, otherwise None."""
+    ident = (identifier or "").strip()
+    return ident if VALID_ID.match(ident) else None
 
-    Se calcula leyendo los archivos existentes y no guardando un contador: un
-    contador en un archivo aparte se desincroniza en cuanto dos personas crean un
-    ticket en ramas distintas, y el conflicto aparece en un lugar que no explica
-    nada.
+
+def _next_number(repo: Path) -> int:
+    """Next free number in the internal registry.
+
+    Computed by reading the existing files rather than storing a counter: a
+    counter in a separate file goes out of sync as soon as two people create a
+    ticket on different branches, and the conflict shows up somewhere that
+    explains nothing.
     """
-    d = repo / DIR_TICKETS
+    d = repo / TICKETS_DIR
     if not d.is_dir():
         return 1
-    usados = []
+    used = []
     for f in d.glob("T-*.md"):
         m = re.match(r"^T-(\d+)$", f.stem)
         if m:
-            usados.append(int(m.group(1)))
-    return max(usados, default=0) + 1
+            used.append(int(m.group(1)))
+    return max(used, default=0) + 1
 
 
-def nuevo_identificador(repo: Path) -> str:
-    """Identificador correlativo del registro interno, con el formato `T-007`.
+def new_identifier(repo: Path) -> str:
+    """Sequential identifier for the internal registry, formatted as `T-007`.
 
-    Correlativo y no derivado del titulo: un identificador derivado de texto
-    obliga a sanitizar, puede colisionar y cambia si el titulo se corrige. El
-    numero no tiene ninguno de esos problemas y ordena por antiguedad.
+    Sequential rather than derived from the title: an identifier built from text
+    has to be sanitized, can collide, and changes when the title is corrected. A
+    number has none of those problems and sorts by age.
     """
-    return f"T-{_proximo_numero(repo):03d}"
+    return f"T-{_next_number(repo):03d}"
 
 
-def ruta(repo: Path, identificador: str) -> Path:
-    return repo / DIR_TICKETS / f"{identificador}.md"
+def path_for(repo: Path, identifier: str) -> Path:
+    return repo / TICKETS_DIR / f"{identifier}.md"
 
 
-def crear(repo: Path, identificador: str, titulo: str, tier: str,
-          alcance: str = "", fuera_de_alcance: str = "") -> Path:
-    """Escribe el ticket con lo acordado en CLASIFICACION.
+def create(repo: Path, identifier: str, title: str, tier: str,
+           scope: str = "", out_of_scope: str = "") -> Path:
+    """Write the ticket with what was agreed during CLASSIFICATION.
 
-    Las secciones no son decorativas: son las cuatro preguntas que la fase tiene
-    que responder. Un ticket sin "que NO entra" documenta una intencion, no un
-    alcance, y es el hueco por el que un trabajo crece sin que nadie lo decida.
+    The sections are not decoration: they are the questions the phase has to
+    answer. A ticket without "what is out of scope" documents an intention
+    rather than a scope, and that is the gap through which work grows without
+    anyone deciding it should.
     """
-    f = ruta(repo, identificador)
+    f = path_for(repo, identifier)
     f.parent.mkdir(parents=True, exist_ok=True)
-    hoy = date.today().isoformat()
+    today = date.today().isoformat()
     f.write_text(
-        f"# {identificador} — {titulo}\n\n"
+        f"# {identifier} - {title}\n\n"
         f"| | |\n|---|---|\n"
-        f"| Estado | abierto |\n"
+        f"| State | open |\n"
         f"| Tier | {tier} |\n"
-        f"| Creado | {hoy} |\n\n"
-        f"## Qué se pide\n\n{alcance or '<una frase, reformulando el pedido>'}\n\n"
-        f"## Qué NO entra\n\n{fuera_de_alcance or '<lo que queda explícitamente afuera>'}\n\n"
-        f"## Registro\n\n- {hoy} — abierto\n",
+        f"| Opened | {today} |\n\n"
+        f"## What is being asked\n\n{scope or '<one sentence, restating the request>'}\n\n"
+        f"## What is out of scope\n\n{out_of_scope or '<what is explicitly left out>'}\n\n"
+        f"## Log\n\n- {today} - opened\n",
         encoding="utf-8",
     )
     return f
 
 
-def registrar(repo: Path, identificador: str, evento: str) -> bool:
-    """Agrega una linea al registro del ticket. Falso si el ticket no existe."""
-    f = ruta(repo, identificador)
+def log_event(repo: Path, identifier: str, event: str) -> bool:
+    """Append a line to the ticket log. False if the ticket does not exist."""
+    f = path_for(repo, identifier)
     if not f.exists():
         return False
-    contenido = f.read_text(encoding="utf-8-sig").rstrip("\n")
-    contenido += f"\n- {date.today().isoformat()} — {evento}\n"
-    f.write_text(contenido, encoding="utf-8")
+    content = f.read_text(encoding="utf-8-sig").rstrip("\n")
+    content += f"\n- {date.today().isoformat()} - {event}\n"
+    f.write_text(content, encoding="utf-8")
     return True
 
 
-def actualizar_estado(repo: Path, identificador: str, estado: str) -> bool:
-    """Cambia el estado declarado en la tabla de cabecera."""
-    if estado not in ESTADOS:
+def set_state(repo: Path, identifier: str, state: str) -> bool:
+    """Change the state declared in the header table."""
+    if state not in STATES:
         return False
-    f = ruta(repo, identificador)
+    f = path_for(repo, identifier)
     if not f.exists():
         return False
-    contenido = f.read_text(encoding="utf-8-sig")
-    nuevo = re.sub(r"^\| Estado \| .* \|$", f"| Estado | {estado} |",
-                   contenido, count=1, flags=re.MULTILINE)
-    f.write_text(nuevo, encoding="utf-8")
+    content = f.read_text(encoding="utf-8-sig")
+    updated = re.sub(r"^\| State \| .* \|$", f"| State | {state} |",
+                     content, count=1, flags=re.MULTILINE)
+    f.write_text(updated, encoding="utf-8")
     return True
 
 
-def listar(repo: Path) -> list[tuple[str, str, str]]:
-    """Tickets del registro interno como (identificador, estado, titulo)."""
-    d = repo / DIR_TICKETS
+def listing(repo: Path) -> list[tuple[str, str, str]]:
+    """Tickets in the internal registry as (identifier, state, title)."""
+    d = repo / TICKETS_DIR
     if not d.is_dir():
         return []
-    salida = []
+    out = []
     for f in sorted(d.glob("*.md")):
-        texto = f.read_text(encoding="utf-8-sig", errors="replace")
-        m_estado = re.search(r"^\| Estado \| (.+?) \|$", texto, re.MULTILINE)
-        m_titulo = re.search(r"^# \S+ — (.+)$", texto, re.MULTILINE)
-        salida.append((f.stem,
-                       m_estado.group(1).strip() if m_estado else "?",
-                       m_titulo.group(1).strip() if m_titulo else ""))
-    return salida
+        text = f.read_text(encoding="utf-8-sig", errors="replace")
+        m_state = re.search(r"^\| State \| (.+?) \|$", text, re.MULTILINE)
+        m_title = re.search(r"^# \S+ - (.+)$", text, re.MULTILINE)
+        out.append((f.stem,
+                    m_state.group(1).strip() if m_state else "?",
+                    m_title.group(1).strip() if m_title else ""))
+    return out

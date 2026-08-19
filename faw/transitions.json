@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "_note": "Gates with strength 'machine' are checked by a script and cannot be satisfied by declaring them. Gates with strength 'receipt' require that a file exists. Gates with strength 'declaration' are the agent's own record: the state machine requires that the statement exists before the move, not that it is true.",
+
+  "gates": {
+    "profile":           { "strength": "receipt",     "verifies": "docs/faw/<ticket>/profiling.md exists and contains the queries behind its numbers" },
+    "contract":          { "strength": "receipt",     "verifies": "scripts/verify_contract.py <contract>.yml --syntax-only — for EVERY table in the ticket; with more than one, declare the scope on the move: --gate tables=t1,t2,..." },
+    "brief":             { "strength": "machine",     "verifies": "scripts/verify_brief.py" },
+    "platform":          { "strength": "machine",     "verifies": "scripts/verify_platform.py — also run by the commit hook against the staged diff, so it is not tied to a single edge of the graph" },
+    "assertions":        { "strength": "declaration", "verifies": "the agent's record" },
+    "authorization":     { "strength": "declaration", "verifies": "the agent's record" },
+    "tooling":           { "strength": "declaration", "verifies": "which official platform skill or tool was used for this artifact, or why none applied. A declaration, because no hook can tell whether documentation was read. What it does buy: the choice is stated and recorded instead of assumed, and a wrong one becomes visible in the log rather than in the output." },
+    "schema":            { "strength": "machine",     "verifies": "scripts/verify_contract.py <contract>.yml --schema <snapshot>.json — for EVERY table in the ticket; with more than one, declare the scope on the move: --gate tables=t1,t2,..." },
+    "model":             { "strength": "machine",     "verifies": "scripts/verify_model.py" },
+    "report":            { "strength": "machine",     "verifies": "scripts/verify_report.py" },
+    "reconciliation":    { "strength": "declaration", "verifies": "the agent's record, naming who is accountable" },
+    "metadata":          { "strength": "machine",     "verifies": "scripts/verify_diff.py" },
+    "git-clean":         { "strength": "machine",     "verifies": "git status --porcelain is empty" },
+    "user_confirmation": { "strength": "declaration", "verifies": "the user gave explicit approval at this checkpoint" }
+  },
+
+  "_note_checkpoints": "user_confirmation marks the 3 points where the agent STOPS and waits: end of CLASSIFICATION, end of DESIGN, end of VALIDATION. Every other transition advances on its own as soon as its gates pass, showing a summary but not waiting for approval. Authorizations to write to the platform (the 'authorization' gate) are a separate gate, asked for every time, and do not count against this budget.",
+
+  "no_abandon": ["PUBLICATION"],
+
+  "common": {
+    "IDLE->CLASSIFICATION": { "gates": [] }
+  },
+
+  "tiers": {
+    "ARTIFACT": {
+      "CLASSIFICATION->PROFILING": { "gates": ["user_confirmation"], "_checkpoint": "1 of 3 — end of CLASSIFICATION" },
+      "PROFILING->DESIGN":         { "gates": ["profile"], "_checkpoint": null },
+      "DESIGN->BUILD":             { "gates": ["contract", "user_confirmation"], "_checkpoint": "2 of 3 — end of DESIGN, before building" },
+      "BUILD->VALIDATION":         { "gates": ["assertions", "authorization", "tooling"], "_checkpoint": null },
+      "VALIDATION->PUBLICATION":   { "gates": ["schema", "user_confirmation"], "_checkpoint": "3 of 3 — end of VALIDATION, before publishing" },
+      "PUBLICATION->IDLE":         { "gates": ["metadata", "git-clean"] },
+      "DESIGN->PROFILING":         { "gates": [] },
+      "VALIDATION->BUILD":         { "gates": [] }
+    },
+
+    "MODEL": {
+      "_note": "Semantic model: tables, relationships, measures, storage mode. A wrong storage mode, a reversed relationship or a wrong summarizeBy is invisible while building and shows up in the number the end user reads, by which point it is already published. Hence the stricter gates in this tier.",
+      "CLASSIFICATION->PROFILING": { "gates": ["user_confirmation"], "_checkpoint": "1 of 3 — end of CLASSIFICATION" },
+      "PROFILING->DESIGN":         { "gates": ["profile"], "_checkpoint": null },
+      "DESIGN->BUILD":             { "gates": ["contract", "user_confirmation"], "_checkpoint": "2 of 3 — end of DESIGN, before building" },
+      "BUILD->VALIDATION":         { "gates": ["authorization", "tooling"], "_checkpoint": null },
+      "VALIDATION->PUBLICATION":   { "gates": ["model", "reconciliation", "user_confirmation"], "_checkpoint": "3 of 3 — end of VALIDATION, before publishing" },
+      "PUBLICATION->IDLE":         { "gates": ["metadata", "git-clean"] },
+      "DESIGN->PROFILING":         { "gates": [] },
+      "VALIDATION->BUILD":         { "gates": [] }
+    },
+
+    "REPORT": {
+      "_note": "BUILD is unconstrained — layout, visual choice and hierarchy are not machine-verifiable — but entering BUILD is not: 'free building' does not mean 'nothing needs to be agreed'. Without an objective and an audience agreed with the user, scope ends up inferred from the semantic model instead of decided. The 'brief' gate closes that. The silent failure of this layer is the development filter left behind and persisted in the report definition: numbers that are credible and filtered.",
+      "CLASSIFICATION->BUILD":   { "gates": ["brief", "user_confirmation"], "_checkpoint": "1 of 2 — end of CLASSIFICATION, before building" },
+      "BUILD->PUBLICATION":      { "gates": ["report", "reconciliation", "tooling", "user_confirmation"], "_checkpoint": "2 of 2 — before publishing" },
+      "PUBLICATION->IDLE":       { "gates": ["git-clean"] }
+    },
+
+    "INCIDENT": {
+      "_note": "Fast lane, but profiling the symptom is not optional: a diagnosis is measured, not assumed.",
+      "CLASSIFICATION->PROFILING": { "gates": [] },
+      "PROFILING->BUILD":          { "gates": ["profile"] },
+      "BUILD->PUBLICATION":        { "gates": ["assertions", "authorization"] },
+      "PUBLICATION->IDLE":         { "gates": ["metadata", "git-clean"] }
+    },
+
+    "MINOR-CHANGE": {
+      "_note": "Reclassified to ARTIFACT if the change touches schema, business logic, the consumption layer, or exceeds roughly 30 effective lines.",
+      "CLASSIFICATION->BUILD":     { "gates": [] },
+      "BUILD->PUBLICATION":        { "gates": ["assertions"] },
+      "PUBLICATION->IDLE":         { "gates": ["metadata", "git-clean"] },
+      "CLASSIFICATION->PROFILING": { "gates": [], "_note": "exit used when reclassifying to ARTIFACT" }
+    },
+
+    "EXPLORATION": {
+      "_note": "Writing to the platform is forbidden. Produces a document.",
+      "CLASSIFICATION->PROFILING": { "gates": [] },
+      "PROFILING->IDLE":           { "gates": ["profile", "git-clean"] }
+    },
+
+    "QUESTION": {
+      "_note": "No phases. Answered with sources. If it turns out something has to be touched, it is reclassified before touching anything.",
+      "CLASSIFICATION->IDLE": { "gates": [] }
+    }
+  },
+
+  "_note_resume": "Resuming paused work re-enters the phase it was paused in. There is no list of resumable phases: the proof is the pause itself. The previous entry must be a pause ending in IDLE, and the phase it was paused from is the only one the resume can re-enter."
+}

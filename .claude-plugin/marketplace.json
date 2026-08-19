@@ -1,6 +1,6 @@
 {
   "name": "faw",
-  "description": "FAW empaquetado para Claude Code. Un plugin: una maquina de estados para trabajo de datos sobre Fabric, con compuertas aplicadas fuera del modelo.",
+  "description": "FAW packaged for Claude Code. One plugin: a state machine for data work on Microsoft Fabric, with gates enforced outside the model.",
   "owner": {
     "name": "Tomas Di Loreto"
   },
@@ -8,7 +8,7 @@
     {
       "name": "faw",
       "source": "./",
-      "description": "FAW — Fabric Agentic Workflow: fases en orden, compuertas que verifican esquema, modelo, brief y literales de plataforma, un validador que no construyo lo que revisa, y estado que sobrevive cerrar la sesion."
+      "description": "FAW - Fabric Agentic Workflow: phases in order, gates that verify schema, model, brief and platform literals, a validator that did not build what it reviews, and state that survives closing the session."
     }
   ]
 }

@@ -1,70 +1,101 @@
 ---
 name: faw-roadmap
-description: Contrasta lo planificado contra lo que existe de verdad en la plataforma, y cuando no hay un rumbo definido ayuda a construirlo tomando como referencia el marco de adopción oficial de Microsoft. Usar al revisar avance, al replanificar, o cuando el backlog se quedó sin nada que proponer.
+description: Contrasts what was planned against what actually exists on the platform, and when there is no defined direction, helps build one using the official adoption framework as a reference. Use when reviewing progress, replanning, or when the backlog has run out of things to propose.
 ---
 
 # Roadmap
 
-Esta skill hace dos trabajos distintos según lo que el proyecto ya tenga.
+This skill does two different jobs depending on what the project already has.
 
-Si hay un plan, lo contrasta contra la realidad y muestra las diferencias. Si no hay ninguno, ayuda a construir uno. La segunda situación es más común de lo que parece: un proyecto puede tener un backlog lleno de tareas y aun así no tener rumbo, porque un backlog dice qué hay pendiente y un roadmap dice hacia dónde se va.
-
----
-
-## Cuando hay un plan: contrastar tres estados
-
-Tres cosas que empiezan iguales y divergen con el tiempo:
-
-1. **Lo planificado** — lo que dice el backlog o el documento de rumbo.
-2. **Lo registrado** — lo que el equipo cree que está hecho.
-3. **Lo que existe** — lo que hay realmente desplegado en la plataforma.
-
-El material de esta skill son las diferencias. No se esconden ni se suavizan: una discrepancia es información sobre por qué el plan y la realidad se separaron.
-
-| Desvío | Qué significa |
-|---|---|
-| Hecho pero no cerrado | El trabajo existe y el registro no lo refleja |
-| Cerrado pero no hecho | El registro dice terminado y en la plataforma no está, o está a medias |
-| Hecho sin planificar | Apareció trabajo que nadie planificó: normalmente urgencias o descubrimientos |
-| Planificado hace mucho, sin empezar | Candidato a que ya no haga falta |
-| Bloqueado sin dueño | Nadie tiene la acción que lo destraba |
-| Construido dos veces | Dos artefactos resuelven lo mismo sin saberlo |
-
-Por cada desvío se dice **la causa**, no solo el hecho: información que llegó tarde, realidad técnica distinta de la esperada, estimación equivocada, o algo que se descubrió al construir. Sin causa, la lista es un inventario; con causa, sirve para decidir.
-
-Verificar contra la plataforma, no contra el repositorio: el repositorio declara la intención y el ambiente desplegado es lo que existe (principio 11).
-
-El resultado no es un informe de avance. La pregunta que responde es si el plan sigue siendo el correcto.
+If there is a plan, it contrasts it against reality and shows the differences. If
+there is none, it helps build one. The second situation is more common than it
+looks: a project can have a backlog full of tasks and still have no direction,
+because a backlog says what is pending and a roadmap says where things are going.
 
 ---
 
-## Cuando no hay plan: construir el rumbo
+## When there is a plan: contrast three states
 
-Si el proyecto no tiene roadmap, esta skill lo ofrece en vez de dar el tema por cerrado. No es obligatorio tenerlo: un proyecto chico puede funcionar bien resolviendo pedidos a medida que llegan. Pero conviene que sea una decisión y no un olvido, porque sin rumbo la infraestructura de datos crece por acumulación y cada pieza responde a la urgencia de su momento.
+Three things that start out identical and diverge over time:
 
-### La referencia: el marco de adopción de Microsoft
+1. **What was planned**: what the backlog or the direction document says.
+2. **What is recorded**: what the team believes is done.
+3. **What exists**: what is actually deployed on the platform.
 
-Microsoft publica el **Microsoft Fabric adoption roadmap**, que ordena la adopción en doce áreas y define niveles de madurez para ubicarse en cada una. Las áreas son: cultura de datos, patrocinio ejecutivo, alineación con el negocio, propiedad y gestión del contenido, alcance de la distribución, centro de excelencia, gobierno, mentoría y habilitación de usuarios, comunidad de práctica, soporte a usuarios, supervisión del sistema, y gestión del cambio.
+The material of this skill is the differences. They are not hidden or softened: a
+discrepancy is information about why the plan and reality separated.
 
-*Verificado en Microsoft Learn, página con `ms.date` 2024-12-30. Existe además un "Power BI adoption framework" anterior, orientado a partners; la propia documentación indica que el adoption roadmap es la guía vigente. Cuando se cite este marco, leer la página y usar su fecha.*
-
-**Cómo se usa acá, y cómo no.** Ese marco es organizacional: cubre cultura, patrocinio y gobierno, que se deciden por afuera de cualquier herramienta técnica. FAW no gobierna nada de eso y no debe pretender que sí. Lo que esta skill hace es usarlo como **checklist de rumbo**, para que un roadmap técnico no se arme mirando únicamente la pila de tareas pendientes.
-
-De las doce áreas, las que se traducen a trabajo concreto de ingeniería de datos son cuatro:
-
-| Área del marco | Qué preguntas abre para el roadmap técnico |
+| Deviation | What it means |
 |---|---|
-| **Propiedad y gestión del contenido** | ¿Quién es dueño de cada artefacto? ¿Qué pasa cuando quien lo construyó no está? |
-| **Gobierno** | ¿Hay convención de nombres, capas y permisos, o cada pieza sigue la suya? ¿Los datos sensibles están identificados? |
-| **Supervisión del sistema** | ¿Alguien mira el consumo de capacidad, las corridas fallidas, los modelos que no se actualizan? |
-| **Alcance de la distribución** | ¿Esto lo usa una persona, un equipo o toda la organización? Cambia lo que hay que construir |
+| Done but not closed | The work exists and the record does not show it |
+| Closed but not done | The record says finished and it is not on the platform, or only partly |
+| Done without planning | Work appeared that nobody planned: usually urgencies or discoveries |
+| Planned long ago, never started | A candidate for not being needed any more |
+| Blocked with no owner | Nobody holds the action that unblocks it |
+| Built twice | Two artifacts solve the same thing without knowing about each other |
 
-Las otras ocho se mencionan si el usuario quiere ubicarse en el marco completo, pero no se convierten en tickets: no son trabajo de ingeniería.
+For each deviation, state **the cause**, not only the fact: information that
+arrived late, technical reality different from what was expected, a wrong
+estimate, or something discovered while building. Without the cause the list is an
+inventory; with it, it supports a decision.
 
-### Qué se produce
+Verify against the platform, not against the repository: the repository declares
+the intent and the deployed environment is what exists (principle 11).
 
-Una propuesta de rumbo corta, con tres a cinco objetivos, y para cada uno: qué problema resuelve, qué habría que construir, y qué lo bloquea hoy. Se ordena por dependencia técnica, igual que el backlog.
+The output is not a progress report. The question it answers is whether the plan is
+still the right one.
 
-El roadmap se guarda en el repositorio, en `docs/faw/roadmap.md`, y se revisa cuando cambia algo relevante, no en una cadencia fija.
+---
 
-**No se crean tickets a partir del roadmap sin el OK del usuario.** Un roadmap aprobado no es autorización para llenar el backlog: es el marco desde el que se proponen los tickets uno por uno.
+## When there is no plan: build the direction
+
+If the project has no roadmap, this skill offers to build one instead of treating
+the topic as closed. Having one is not mandatory: a small project can work fine
+resolving requests as they arrive. But it should be a decision rather than an
+oversight, because without direction the data platform grows by accumulation and
+each piece answers the urgency of its moment.
+
+### The reference: the official adoption roadmap
+
+Microsoft publishes the **Microsoft Fabric adoption roadmap**, which organizes
+adoption into twelve areas and defines maturity levels for locating yourself in
+each one. The areas are: data culture, executive sponsorship, business alignment,
+content ownership and management, content delivery scope, center of excellence,
+governance, mentoring and user enablement, community of practice, user support,
+system oversight, and change management.
+
+*Checked on Microsoft Learn, page dated 2024-12-30. There is also an earlier "Power
+BI adoption framework" aimed at partners; the documentation itself indicates the
+adoption roadmap is the current guidance. When citing this, read the page and use
+its date.*
+
+**How it is used here, and how it is not.** That framework is organizational: it
+covers culture, sponsorship and governance, which are decided outside any
+technical tool. FAW does not govern any of that and should not pretend to. What
+this skill does is use it as a **direction checklist**, so a technical roadmap is
+not built by looking only at the pile of pending tasks.
+
+Of the twelve areas, four translate into concrete data engineering work:
+
+| Area | What it opens up for the technical roadmap |
+|---|---|
+| **Content ownership and management** | Who owns each artifact? What happens when whoever built it is gone? |
+| **Governance** | Is there a convention for names, layers and permissions, or does each piece follow its own? Is sensitive data identified? |
+| **System oversight** | Is anyone watching capacity consumption, failed runs, models that stop refreshing? |
+| **Content delivery scope** | Is this used by one person, one team, or the whole organization? It changes what has to be built |
+
+The other eight get mentioned if the user wants to locate themselves in the full
+framework, but they do not become tickets: they are not engineering work.
+
+### What gets produced
+
+A short direction proposal, with three to five objectives, and for each one: what
+problem it solves, what would have to be built, and what blocks it today. It is
+ordered by technical dependency, like the backlog.
+
+The roadmap is stored in the repository at `docs/faw/roadmap.md`, and reviewed when
+something relevant changes rather than on a fixed cadence.
+
+**Tickets are not created from the roadmap without the user's approval.** An
+approved roadmap is not permission to fill the backlog: it is the frame from which
+tickets get proposed one at a time.

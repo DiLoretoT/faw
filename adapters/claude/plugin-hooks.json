@@ -1,7 +1,7 @@
 {
-  "_comentario": "Hooks de FAW instalado como plugin. La documentacion oficial admite dos ubicaciones: el default hooks/hooks.json en la raiz del plugin, o la ruta que declare el campo 'hooks' de plugin.json (acepta string, lista o configuracion inline). FAW usa la segunda porque la declaracion queda explicita en el manifest y admite varios archivos si el metodo crece. Las dos son validas y 'claude plugin validate' revisa ambas.",
+  "_comment": "Hooks for FAW installed as a Claude Code plugin. The official documentation allows two locations: the default hooks/hooks.json at the plugin root, or the path declared by the 'hooks' field of plugin.json, which accepts a path, a list of paths, or inline configuration. FAW uses the second one because the declaration stays visible in the manifest and allows splitting hooks across files as the method grows. Both are valid and 'claude plugin validate' checks either.",
 
-  "_opt_in": "Los dos hooks salen sin hacer nada si el proyecto no tiene marcador de FAW. Instalar el plugin global no mete contexto de Fabric en proyectos que no son de Fabric.",
+  "_opt_in": "Every hook exits without doing anything if the project has no .faw/ directory. Installing the plugin globally does not push data-platform context into unrelated projects.",
 
   "hooks": {
     "UserPromptSubmit": [
@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/inyectar_contexto.py\""
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/inject_context.py\""
           }
         ]
       }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/compuerta_escritura.py\""
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/write_gate.py\""
           }
         ]
       },
@@ -29,21 +29,21 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/pre_commit_metadata.py\""
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/commit_gate.py\""
           },
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/compuerta_pr.py\""
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/pr_gate.py\""
           }
         ]
       },
       {
-        "_comentario": "Las herramientas de un servidor MCP se presentan a los hooks como cualquier otra, con el nombre mcp__<servidor>__<herramienta>, asi que un matcher las alcanza. El punto para el metodo es que sin esto las fases gobernaban el codigo y no el dato: una escritura contra el tenant por MCP no tocaba ningun archivo del repo y por eso no pasaba por ninguna compuerta. El .* es obligatorio: un matcher sin metacaracteres se compara como string exacto y no matchearia nada.",
+        "_comment": "MCP tools are presented to hooks like any other tool, named mcp__<server>__<tool>, so a matcher reaches them. This matters because without it the phases governed the code and not the data: a write to the platform through an MCP server touched no file in the repository and therefore passed no gate. The .* is required: a matcher with no metacharacters is compared as an exact string and would match nothing.",
         "matcher": "mcp__.*",
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/compuerta_mcp.py\""
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/mcp_gate.py\""
           }
         ]
       }
