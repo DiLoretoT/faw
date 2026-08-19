@@ -1,57 +1,62 @@
-# La capa de plataforma: microsoft/skills-for-fabric
+# La capa de plataforma: skills oficiales de Microsoft
 
-FAW gobierna el **proceso** (fases, compuertas, calidad). No enseña a escribir un Eventstream ni cuál API usar para desplegar un modelo semántico — y no debe: ese conocimiento cambia con cada release de Fabric y mantenerlo a mano garantiza que envejezca mal.
+FAW gobierna el **proceso**: qué se verifica, en qué orden, con qué evidencia. No enseña a escribir un Eventstream ni cuál API despliega un modelo semántico, y no debe: ese conocimiento cambia con cada release de Fabric, y mantenerlo a mano garantiza que envejezca mal sin que nadie lo note.
 
-Esa capa existe y la mantiene Microsoft: [`microsoft/skills-for-fabric`](https://github.com/microsoft/skills-for-fabric) (MIT). Skills operativas por tipo de artefacto, escritas por el fabricante, con decision trees de qué herramienta usar (MCP > CLI > API) y patrones verificados.
+Esa capa la mantiene Microsoft en [`microsoft/skills-for-fabric`](https://github.com/microsoft/skills-for-fabric): skills operativas por tipo de artefacto, escritas por el fabricante, con árboles de decisión sobre qué herramienta usar para cada operación.
 
-**Las dos capas se complementan y no se pisan** — verificado leyendo su propio repo: se declara "primarily artifact-authoring focused" y explícitamente sin compuertas formales ni contratos de datos. Eso lo pone FAW.
+**Las dos capas se complementan porque resuelven cosas distintas.** El propio repo de Microsoft se declara enfocado en la autoría de artefactos y sin compuertas formales ni contratos de datos. Eso es lo que pone FAW.
 
-## Dónde vive y cómo se actualiza
+## Instalación
 
-Clon local, en la ruta que prefieras (en los ejemplos, `~/skills-for-fabric`) — canal de instalación **soportado oficialmente** por el repo (su skill `check-updates` lo trata como "Git channel" de primera clase).
+Se instala como plugin, igual que FAW. Son **dos bundles separados**: el de Power BI no viene incluido en el de Fabric.
 
 ```bash
-git -C ~/skills-for-fabric pull --ff-only
+claude plugin marketplace add microsoft/skills-for-fabric
+claude plugin install fabric-skills@fabric-collection
+claude plugin install powerbi-authoring@fabric-collection
 ```
 
-**Cadencia:** al arrancar trabajo Fabric, si hace más de 7 días del último pull, actualizar y mirar el `CHANGELOG.md` por cambios relevantes. (Espeja el "network guard" de 7 días que usa su propio `check-updates`.) Nunca editar nada dentro del clon: es de Microsoft, se consume tal cual.
+También se puede consumir desde un clon local del repositorio, que es la vía para editores que no soportan plugins. Si se usa un clon, la ruta se declara en `faw.json` bajo `canal.skills_microsoft`, y conviene actualizarlo periódicamente: una skill de plataforma desactualizada es peor que no tenerla, porque afirma con seguridad algo que dejó de ser cierto.
 
-## Cuándo consultar qué
+```bash
+git -C <ruta-del-clon> pull --ff-only
+```
 
-En **CONSTRUCCIÓN**, antes de autorizar un tipo de artefacto, leer la skill correspondiente:
+## Qué skill leer, y por qué no hay una tabla exhaustiva acá
 
-| Vas a trabajar en… | Leé |
+El repositorio de Microsoft reorganiza sus skills entre versiones: fusiona bundles, renombra carpetas y elimina las que deja de mantener. Una tabla de rutas copiada en este archivo queda desactualizada sin que nada avise, y el método terminaría mandando a leer archivos que ya no existen.
+
+**El índice se consulta en el repositorio instalado**, que es la única fuente que no envejece. La orientación general, estable entre versiones:
+
+| Vas a trabajar en | Buscá la skill de |
 |---|---|
-| Notebook Spark / Lakehouse / MLV | `plugins/fabric-authoring/skills/spark-authoring-cli/SKILL.md` + `common/notebook-authoring/` |
-| Modelo semántico (crear, medidas, relaciones, deploy, refresh) | `plugins/powerbi-authoring/skills/semantic-model-authoring/SKILL.md` |
-| Reporte Power BI (planificar / diseñar / autorizar / gestionar) | `plugins/powerbi-authoring/skills/powerbi-report-*/SKILL.md` |
-| Dataflows Gen2 | `plugins/fabric-authoring/skills/dataflows-authoring-cli/SKILL.md` |
-| Warehouse / SQL endpoint | `plugins/fabric-authoring/skills/sqldw-authoring-cli/SKILL.md` |
-| Diagnóstico de jobs Spark / performance | `plugins/fabric-operations/` (bundle completo en el manifest) |
-| Arquitectura medallion end-to-end | `plugins/fabric-authoring/skills/e2e-medallion-architecture/SKILL.md` |
+| Notebooks Spark, lakehouse | Spark |
+| Modelo semántico: tablas, medidas, relaciones, despliegue, actualización | Autoría de modelo semántico |
+| Reporte de Power BI | Planificación, autoría, diseño y gestión de reportes (son skills distintas) |
+| Warehouse, SQL | Warehouse y base de datos SQL |
+| Dataflows | Dataflows |
+| Eventhouse, Eventstream, Activator | Cada uno tiene la suya |
+| Versionado e integración con git | Integración con git |
+| Promoción entre ambientes | Deployment pipelines |
+| Parametrización por ambiente | Variable library |
+| Arquitectura medallón de punta a punta | Arquitectura medallón |
 
-## Los agentes de Microsoft son subagentes reales
+Verificado contra el repositorio el 2026-08-19. Si una ruta no resuelve, el índice del repositorio manda sobre esta tabla.
 
-`agents/FabricDataEngineer.agent.md` y compañía tienen el formato exacto de un subagente de Claude Code (frontmatter + reglas de delegación hacia sus skills). Se usan como subagentes vía **wrappers locales** en `~/.claude/agents/` (ej.: `fabric-data-engineer.md`), que:
+## Los servidores MCP que declara
 
-- apuntan a la definición canónica **dentro del clon** (así `git pull` los actualiza sin tocar el wrapper);
-- traducen las referencias a skills en rutas del clon;
-- agregan las reglas de la casa que prevalecen si chocan: **un subagente no puede obtener el OK de escritura — si su tarea requiere escribir, devuelve la operación propuesta al orquestador para aprobación del usuario**; el canal de cambio lo gobierna FAW, no la skill.
+El repositorio declara servidores MCP propios para consultar el endpoint SQL y para el catálogo de Fabric, y el bundle de Power BI declara uno para modelado. Antes de usarlos conviene tener presente la distinción que hace la propia documentación de Microsoft:
 
-Nunca editar los archivos del clon: el wrapper existe justamente para no hacerlo.
+- Los servidores **remotos** de Fabric y Power BI están pensados para consulta y para operaciones de gestión con autenticación y registro de auditoría propios.
+- Los servidores **locales** son los que pueden **escribir** un modelo semántico completo.
+- El endpoint SQL es de solo lectura por construcción: no admite modificaciones de datos.
 
-## Reglas de convivencia con FAW
+Microsoft advierte explícitamente que un cliente MCP autónomo o mal configurado puede ejecutar operaciones destructivas, y que los mecanismos para impedirlo no están estandarizados en la especificación. Esa es la razón por la que FAW pone su propia compuerta sobre las escrituras por MCP (`faw/hooks/compuerta_mcp.py`) en vez de confiar en el servidor.
 
-1. **FAW manda en proceso; skills-for-fabric manda en mecánica.** Si su skill dice "deploy directo al workspace" y FAW dice "por PR", gana FAW: sus skills no conocen nuestro canal de cambio ni la superficie de cliente.
-2. **Sus skills no saben de autorización por turno.** Cualquier operación de escritura que una skill de Microsoft proponga sigue necesitando el OK explícito del turno. La skill dice *cómo*; el permiso lo da el usuario.
-3. **Sus decision trees de herramienta sí se adoptan** (ej.: preferir `powerbi-modeling-mcp` sobre editar TMDL a mano) — es exactamente el tipo de conocimiento de plataforma que no queremos mantener nosotros.
-4. **Es una fuente citable de mecánica, no de comportamiento del producto.** Para afirmaciones determinantes ("no se puede X") sigue rigiendo la regla de doc oficial leída con `ms.date` — una skill puede estar desactualizada igual que un blog.
+## Reglas de convivencia
 
-## Estado de instalación: híbrido, y el porqué exacto
-
-- **`powerbi-authoring@fabric-collection` instalado como plugin nativo** (scope user, v0.3.10). Sus 6 skills (semantic-model-authoring + powerbi-report-*) cargan nativamente, su `check-updates` avisa solo, y declara el MCP `powerbi-modeling-mcp` (stdio).
-- **Los bundles de Fabric (`fabric-authoring`, `fabric-skills`, etc.) NO se pudieron instalar como plugin**: declaran un MCP de tipo **HTTP** (`fabric-sqlendpoint` → `api.fabric.microsoft.com`) y Claude Code 2.1.220 rechaza plugins con MCPs HTTP ("source type not supported"). Verificado instalando: `powerbi-authoring` (MCP stdio) entró; `fabric-authoring` (MCP http) no. **Reintentar tras cada update de Claude Code** — cuando entre, sus skills y sus 3-4 agentes se registran solos y los wrappers locales quedan redundantes.
-- **Mientras tanto, las skills de Fabric se consumen del clon** (tabla de arriba) — canal Git soportado de primera clase por su propio `check-updates`.
-- El MCP `fabric-sqlendpoint` **se agregó a mano** (`claude mcp add --transport http --scope user ...`): consultas T-SQL al SQL endpoint sin levantar sesión Livy (segundos vs. minutos, para lecturas de perfilado/validación). Requiere autenticarse la primera vez vía `/mcp` en sesión interactiva, y aplica el mismo gotcha de tenant que `ms-fabric-mcp`: verificar contra qué tenant quedó la sesión antes de usarlo con un cliente.
-
-Los plugins y MCPs instalados a nivel user recién aparecen en sesiones nuevas (o tras `/reload-plugins`).
+1. **FAW manda en proceso; las skills de Microsoft mandan en mecánica.** Si una skill dice "desplegar directo al workspace" y FAW dice "por PR", gana FAW: esas skills no conocen el canal de cambio del proyecto ni quién lee cada superficie.
+2. **Ninguna operación de escritura que una skill proponga exime del OK del turno.** La skill dice *cómo*; el permiso lo da el usuario.
+3. **Sus árboles de decisión de herramienta sí se adoptan.** Es exactamente el tipo de conocimiento de plataforma que no conviene mantener por afuera.
+4. **Son fuente de mecánica, no de comportamiento del producto.** Para una afirmación determinante ("no se puede X") sigue rigiendo el principio 6: documentación oficial leída, con la fecha de la página. Una skill puede estar desactualizada igual que cualquier otro texto.
+5. **Nunca editar los archivos del clon.** Se consumen tal cual; lo que se quiera cambiar se resuelve del lado de FAW.

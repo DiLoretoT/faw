@@ -47,7 +47,7 @@ Un "pasa pero" es un falla con mala redacción. Tratalo como falla.
 Volvés a CONSTRUCCIÓN:
 
 ```bash
-python scripts/estado.py mover --a CONSTRUCCION
+python <faw>/scripts/estado.py mover --a CONSTRUCCION
 ```
 
 **No parchees en validación.** El parche lo escribiría el validador y ya no queda nadie mirando desde afuera.
@@ -55,7 +55,7 @@ python scripts/estado.py mover --a CONSTRUCCION
 ## Si pasa
 
 ```bash
-python scripts/estado.py mover --a PUBLICACION --compuerta esquema="ok: 20 columnas, coinciden con el contrato"
+python <faw>/scripts/estado.py mover --a PUBLICACION --compuerta esquema="ok: 20 columnas, coinciden con el contrato"
 ```
 
 Para tier `MODELO`, además `--compuerta modelo="ok: ..."` y `--compuerta reconciliacion="..."`.

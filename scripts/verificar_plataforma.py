@@ -141,6 +141,12 @@ def _resuelve(url: str, cache: dict[str, bool]) -> bool:
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     p = argparse.ArgumentParser(description="Compuerta de plataforma de FAW")
     p.add_argument("--todo", action="store_true",
                    help="escanea todo el arbol trackeado en vez del diff staged")

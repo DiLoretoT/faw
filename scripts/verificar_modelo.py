@@ -177,6 +177,12 @@ def verificar(esp: dict, modelo: dict, r: Resultado) -> None:
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     p = argparse.ArgumentParser(description="Compuerta de modelo semantico de FAW")
     p.add_argument("esperado", type=Path, help="YAML con lo declarado en DISENO")
     p.add_argument("--definicion", type=Path, required=True,

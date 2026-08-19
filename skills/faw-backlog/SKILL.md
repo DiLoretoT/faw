@@ -1,84 +1,70 @@
 ---
 name: faw-backlog
-description: Trae el backlog de Azure DevOps, muestra en qué estado está el sprint y propone con qué seguir. También reconcilia un pedido fuera de backlog contra las User Stories existentes. Usar al empezar una jornada o cuando no está claro qué sigue.
+description: Responde con qué seguir y dónde encaja un pedido nuevo, contra el gestor de tickets que use el proyecto o contra el registro interno de FAW. Usar al empezar una jornada o cuando no está claro qué sigue.
 ---
 
 # Backlog
 
-Puente entre el backlog de Azure DevOps y FAW. Responde dos preguntas: **¿con qué sigo?** y **¿esto que me están pidiendo dónde encaja?**
+Dos preguntas: **¿con qué sigo?** y **¿esto que me están pidiendo dónde encaja?**
 
-## Antes que nada: cómo leer ADO
+## De dónde salen los tickets
 
-**El MCP de ADO (`mcp__ado__*`) no siempre ve todos los proyectos** — hay al menos un proyecto donde falla y no es un problema de permisos. Si `mcp__ado__core_list_projects` no lo lista, **no insistas ni asumas que no hay acceso**: usá la CLI, que sí funciona.
+Lo declara `faw.json` en la raíz del repo, bajo `tickets.sistema`. Si el archivo no existe, el valor es `interno`.
+
+| Sistema | Dónde se leen | Cómo se opera |
+|---|---|---|
+| `interno` | `docs/faw/tickets/*.md` del propio repo | Se leen y se editan como archivos; el historial lo da git |
+| `ado`, `jira`, `github` | El gestor declarado | Con su servidor MCP si está conectado en la sesión; si no, el usuario opera la herramienta y acá se trabaja con lo que él informe |
+| `ninguno` | No hay backlog | Se trabaja sobre lo que el usuario pida en el momento |
+
+**Antes de consultar un gestor externo, verificar si hay un servidor MCP disponible para él.** Con MCP se consulta y se actualiza directamente. Sin MCP, no se inventa el estado del backlog ni se asume que un ticket existe: se le pregunta al usuario, o se trabaja con el identificador que él dé.
+
+Una herramienta que no tiene MCP no impide usar FAW. Lo único que el método necesita de un ticket es su identificador.
+
+## Modo "con qué sigo"
+
+1. **Traer el estado real.** Del gestor declarado o del registro interno, no de memoria ni de lo que se conversó la sesión pasada.
+
+2. **Armar el panorama, corto:**
+
+   ```
+   Abiertos   : <N>
+   En curso   : <id> <título>
+   Bloqueado  : <id> <título> — por qué
+   Siguiente  : <id> <título>   <- propuesta
+   ```
+
+3. **Proponer el siguiente ordenando por dependencia técnica, no por el orden del backlog.** Las dimensiones antes que los hechos, siempre; una tabla antes que el modelo que la consume; el modelo antes que el reporte. Lo bloqueado no se propone: se reporta como bloqueado y con qué se desbloquea.
+
+4. **Cruzar con el estado de FAW.** Si `estado.py estado` muestra trabajo abierto, decirlo antes de proponer nada nuevo. Abrir un segundo trabajo sin cerrar el primero es cómo se pierde el hilo.
+
+5. **Al proponer, decir en una frase qué se va a hacer si el usuario confirma** (principio 14). No alcanza con "¿arrancamos con el 1001?".
+
+6. **Si no hay nada en el backlog**, decirlo en vez de inventar trabajo. Es el momento de ofrecer `/faw-roadmap`: un backlog vacío casi nunca significa que no haya nada que hacer, significa que nadie decidió qué sigue.
+
+## Modo "dónde encaja esto"
+
+Un pedido que llega por chat se reconcilia contra lo que ya existe **antes** de crear nada nuevo:
+
+| Situación | Qué se hace |
+|---|---|
+| Es parte del alcance de un ticket existente | Se trabaja en ese ticket |
+| Es trabajo nuevo | Se propone crear el ticket, con su alcance en una frase |
+| Es una consulta que no toca nada | Se responde; no se abre ticket |
+| Contradice algo ya decidido | Se dice explícitamente antes de hacerlo |
+
+**Nunca se crea ni se cierra un ticket sin el OK del usuario**, ni en el gestor externo ni en el registro interno. Un ticket creado por iniciativa propia ensucia el backlog de alguien que no lo pidió.
+
+## Cómo se abre el trabajo
+
+Con el identificador que corresponda al sistema declarado:
 
 ```bash
-# Iteración actual y sus work items
-az boards iteration project list --project "<proyecto>" --org https://dev.azure.com/<org>
+# Gestor externo: el identificador sale de ahí
+python <faw>/scripts/estado.py iniciar --ticket 1001 --tier ARTEFACTO --titulo "<título>"
 
-# Query por WIQL: lo abierto del sprint actual
-az boards query --org https://dev.azure.com/<org> --project "<proyecto>" \
-  --wiql "SELECT [System.Id],[System.Title],[System.State],[System.WorkItemType],[Microsoft.VSTS.Scheduling.StoryPoints] FROM WorkItems WHERE [System.IterationPath] = @currentIteration AND [System.State] <> 'Closed' ORDER BY [System.WorkItemType], [System.Id]"
-
-# Un work item concreto
-az boards work-item show --id <id> --org https://dev.azure.com/<org>
+# Registro interno: FAW genera el identificador y crea el archivo del ticket
+python <faw>/scripts/estado.py iniciar --tier ARTEFACTO --titulo "<título>"
 ```
 
-Los IDs numéricos son la referencia canónica (`#1000`), no los títulos ni alias.
-
-## Qué hacés — modo "con qué sigo"
-
-1. **Traé el estado real del sprint.** No de memoria ni del roadmap: de ADO.
-
-2. **Armá el panorama, corto:**
-
-   ```
-   Iteración : <nombre>  ·  <N> ítems abiertos  ·  <SP> SP restantes
-   En curso  : #id título (estado)
-   Bloqueado : #id título — por qué
-   Siguiente : #id título (SP)  ← propuesta
-   ```
-
-3. **Proponé el siguiente con criterio, no el primero de la lista.** El orden importa y lo decide:
-   - **Dependencias técnicas** primero. Las dimensiones antes que los hechos, siempre. Si una US necesita algo que no está construido, no es candidata aunque esté arriba.
-   - **Lo bloqueado no se propone**, se reporta como bloqueado y con qué se desbloquea.
-   - **Lo que desbloquea a otros** vale más que lo que no.
-   - Si dos son equivalentes, la de menos Story Points: cerrar cosas mueve más que empezarlas.
-
-4. **Cruzá con el estado de FAW.** Si `estado.py estado` muestra trabajo abierto, decilo antes de proponer nada nuevo.
-
-5. **Al proponer el siguiente, decí en una frase qué vas a hacer si el usuario confirma** (principio 14) — no alcanza con "¿arrancamos con #1001?". Ej.: "¿Arrancamos con #1001 — voy a revisar el estado real del origen antes de proponer diseño?".
-
-6. **Al elegir, pasás a CLASIFICACIÓN** con el ID de la US como ticket:
-   ```bash
-   python scripts/estado.py iniciar --ticket 1001 --tier ARTEFACTO --titulo "<título de la US>"
-   ```
-
-## Qué hacés — modo "esto encaja en el backlog?"
-
-Cuando el pedido viene por fuera (chat, mail, una reunión):
-
-1. **Buscá si ya existe** una US que lo cubra. Si existe, se trabaja contra esa: no se duplica.
-2. Si no existe, clasificá:
-
-   | El pedido es… | Qué hacés |
-   |---|---|
-   | Parte del alcance de una US existente | Se trabaja en esa US. Comentario en ADO si aporta contexto. |
-   | Trabajo nuevo dentro del alcance del proyecto | **Proponés crear la US** con título, criterios de aceptación y SP estimados. No la creás sin OK. |
-   | Fuera del alcance contratado | **Lo decís.** Puede necesitar conversación comercial antes que técnica. |
-   | Un incidente | Tier `INCIDENTE`. La US se crea después, documentando qué pasó. |
-
-3. **Nunca creás ni cerrás work items sin OK explícito.** Proponés el texto y esperás.
-
-## Nomenclatura
-
-Sin prefijos de orden en los títulos (`A1 ·`, `E1 ·`). El título es solo el contenido; el orden sale de la jerarquía y los tags.
-
-## Qué producís
-
-Nada en disco. El panorama va en el chat, y el resultado es un CLASIFICACIÓN arrancado o una propuesta de US para que apruebes.
-
-## Trampas
-
-- **Proponer trabajo que ya está hecho** porque el backlog no se actualizó. Si el estado de ADO no coincide con lo que ves en Fabric, decilo — probablemente haya que cerrar ítems.
-- **Tomar el orden del backlog como orden de ejecución.** El backlog está priorizado por valor; la ejecución la ordenan las dependencias técnicas.
-- **Crear una US para cada pedido chico.** Un ajuste de `CAMBIO-MENOR` no necesita US propia si cae dentro de una existente.
+El parámetro `--artefacto` declara qué se va a construir (`notebook`, `modelo-semantico`, `reporte`, `pipeline`, `tabla`). Sirve para saber qué skill oficial de la plataforma aplica, así que conviene pasarlo siempre que se sepa.

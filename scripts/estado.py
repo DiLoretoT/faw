@@ -46,7 +46,9 @@ FAW = Path(__file__).resolve().parent.parent
 TRANSICIONES = FAW / "faw" / "transiciones.json"
 
 sys.path.insert(0, str(FAW))
+from faw import perfil as perfil_mod  # noqa: E402
 from faw import recibos  # noqa: E402
+from faw import tickets as tickets_mod  # noqa: E402
 
 
 def _ahora() -> str:
@@ -152,8 +154,24 @@ def _verificar_por_tabla(n: str, d: dict, declaradas: dict[str, str],
         fallos.append(f"{n}: {motivo}{sufijo}")
 
 
+def _pertenece_al_ticket(absoluta: Path, declarada: str, ticket: str) -> bool:
+    """Si un documento puede afirmarse como recibo del ticket en curso.
+
+    Vale que el ticket aparezca en la ruta, que es la convencion habitual, o en
+    el texto del documento, que cubre los proyectos que guardan sus artefactos
+    fuera del repo con otra estructura de carpetas.
+    """
+    if ticket in str(declarada):
+        return True
+    try:
+        return ticket in absoluta.read_text(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        return False
+
+
 def verificar_compuertas(nombres: list[str], reglas: dict,
-                         declaradas: dict[str, str]) -> tuple[bool, list[str]]:
+                         declaradas: dict[str, str],
+                         ticket: str | None = None) -> tuple[bool, list[str]]:
     defs = reglas.get("compuertas", {})
     fallos: list[str] = []
 
@@ -191,6 +209,15 @@ def verificar_compuertas(nombres: list[str], reglas: dict,
             elif (RAIZ / ruta).stat().st_size < 200:
                 fallos.append(f"{n}: '{ruta}' tiene menos de 200 bytes — "
                               f"un recibo de perfilado sin consultas no es un recibo")
+            elif ticket and not _pertenece_al_ticket(RAIZ / ruta, ruta, ticket):
+                # Sin esta atadura, cualquier archivo de mas de 200 bytes cierra la
+                # compuerta: que el recibo fuera el del trabajo en curso lo sostenia
+                # una convencion de nombres, no el codigo. Se acepta que el ticket
+                # aparezca en la ruta o adentro del documento, porque un proyecto
+                # puede guardar sus artefactos fuera del repo con otra estructura.
+                fallos.append(f"{n}: '{ruta}' no menciona al ticket {ticket} ni en su ruta "
+                              f"ni en su contenido, asi que no se puede afirmar que sea el "
+                              f"recibo de este trabajo.")
             continue
 
         if n not in declaradas or not declaradas[n].strip():
@@ -211,10 +238,46 @@ def cmd_iniciar(a) -> int:
         print(f"Ya hay trabajo abierto: {act['ticket']} en {act['fase']}.\n"
               f"Cerralo, pausalo o abandonalo antes de empezar otro.", file=sys.stderr)
         return 1
-    escribir({"ts": _ahora(), "evento": "iniciar", "ticket": a.ticket,
+    p = perfil_mod.perfil(RAIZ)
+    sistema = p["tickets"]["sistema"]
+
+    ticket = a.ticket
+    if ticket:
+        limpio = tickets_mod.sanitizar(ticket)
+        if not limpio:
+            print(f"Identificador invalido: '{ticket}'.\n"
+                  f"Se usa como nombre de directorio (docs/faw/<ticket>/), asi que solo "
+                  f"admite letras, numeros, punto, guion y guion bajo.", file=sys.stderr)
+            return 1
+        ticket = limpio
+    elif sistema == "interno":
+        ticket = tickets_mod.nuevo_identificador(RAIZ)
+    else:
+        print(f"Falta --ticket. Este proyecto declara '{sistema}' como gestor de tickets "
+              f"en {perfil_mod.ARCHIVO_PERFIL}, asi que el identificador sale de ahi.\n"
+              f"Si el trabajo no tiene ticket en {sistema}, crearlo primero: un trabajo "
+              f"sin registro externo queda invisible para el resto del equipo.",
+              file=sys.stderr)
+        return 1
+
+    if sistema == "interno" and not tickets_mod.ruta(RAIZ, ticket).exists():
+        tickets_mod.crear(RAIZ, ticket, a.titulo, a.tier)
+
+    escribir({"ts": _ahora(), "evento": "iniciar", "ticket": ticket,
               "tier": a.tier, "titulo": a.titulo, "fase": "CLASIFICACION",
-              "desde": "IDLE", "commit": _commit()})
-    print(f"  {a.ticket} [{a.tier}] — CLASIFICACION")
+              "desde": "IDLE", "commit": _commit(),
+              "artefacto": a.artefacto or None,
+              "contexto": a.contexto or None,
+              # Se guarda con que reglas de ambiente se abrio el trabajo: sin esto,
+              # cambiar el perfil a mitad de camino vuelve el historial ilegible,
+              # porque no se puede saber bajo que regimen paso cada transicion.
+              "ambiente_unico": perfil_mod.ambiente_unico(p)})
+
+    print(f"  {ticket} [{a.tier}] — CLASIFICACION")
+    if sistema == "interno":
+        print(f"  ticket: {tickets_mod.ruta(RAIZ, ticket).relative_to(RAIZ)}")
+    if a.contexto:
+        print(f"  contexto previo: {a.contexto}")
     return 0
 
 
@@ -274,7 +337,8 @@ def cmd_mover(a) -> int:
         return 1
 
     declaradas = dict(x.split("=", 1) for x in (a.compuerta or []) if "=" in x)
-    ok, fallos = verificar_compuertas(tabla[clave].get("compuertas", []), reglas, declaradas)
+    ok, fallos = verificar_compuertas(tabla[clave].get("compuertas", []), reglas,
+                                      declaradas, act.get("ticket"))
     if not ok:
         print(f"\n  Transicion {clave} RECHAZADA:\n", file=sys.stderr)
         for f in fallos:
@@ -333,13 +397,28 @@ def cmd_reanudar(a) -> int:
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     p = argparse.ArgumentParser(description="Maquina de estados de FAW")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     i = sub.add_parser("iniciar")
-    i.add_argument("--ticket", required=True)
+    # Opcional a proposito: con el registro interno, el identificador lo genera
+    # FAW. Exigirlo obligaba a inventar uno a quien no usa ningun gestor.
+    i.add_argument("--ticket", default="")
     i.add_argument("--tier", required=True)
     i.add_argument("--titulo", default="")
+    # Tipo de artefacto: decide que skill oficial de la plataforma aplica. Sin
+    # este dato el metodo no puede exigir la documentacion correcta, porque no
+    # sabe cual es.
+    i.add_argument("--artefacto", default="")
+    # Documento de una consulta previa cuyo resultado ya cerro decisiones de
+    # diseno. Evita volver a preguntar lo que el usuario ya contesto.
+    i.add_argument("--contexto", default="")
 
     sub.add_parser("estado")
     sub.add_parser("reanudar")

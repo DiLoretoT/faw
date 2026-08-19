@@ -15,7 +15,18 @@ Se hace:
 4. Definir alcance explícito: qué entra y **qué no**.
 5. Crear rama `<tipo>/<slug>` si el tier la necesita.
 
-Se produce: la clasificación, en el chat. Sin documento.
+Se produce: la clasificación, en el chat. Sin documento, salvo el ticket cuando el proyecto usa el registro interno.
+
+**De dónde sale el identificador del trabajo.** Lo declara `tickets.sistema` en `faw.json`. Con un gestor externo, el identificador sale de ahí y se pasa con `--ticket`; con el registro interno, lo genera FAW y crea el archivo del ticket en `docs/faw/tickets/`. Que el gestor externo tenga o no un servidor MCP conectado cambia quién lo opera, no el método: con MCP el agente consulta y actualiza; sin MCP, el usuario opera su herramienta e informa el identificador.
+
+**Cuando el pedido no alcanza para clasificar bien.** Si falta entender el origen, falta una definición de negocio, o hay una decisión de plataforma que depende de datos sin medir, no se avanza a fuerza de supuestos. Se le ofrece al usuario abrir una **consulta previa**: un trabajo de tier `CONSULTA` acotado a responder exactamente esas dudas, que produce un documento en `docs/faw/consultas/`. Ese documento se pasa después al abrir el trabajo real:
+
+```bash
+python <faw>/scripts/estado.py iniciar --tier ARTEFACTO --titulo "..." \
+    --contexto docs/faw/consultas/<id>.md
+```
+
+Al abrir el trabajo real **no se vuelve a preguntar lo que el usuario ya contestó**: se le reconfirma en una línea lo que quedó decidido y se le piden únicamente los datos nuevos.
 
 **Cierre — punto de control 1 de 3:** el usuario confirma tier y alcance. Acá se decide cuánto proceso va a costar el resto.
 
@@ -62,8 +73,9 @@ Se hace:
 2. **Clave natural**, la que se verificó en PERFILADO.
 3. **Contrato de datos** en `<raíz de artefactos>/contratos/<esquema>.<tabla>.yml`: columnas, tipos, nulabilidad, FKs, reglas de calidad. Ver abajo qué es la raíz de artefactos.
 4. **Dónde vive cada transformación.** El criterio: *si al borrar el consumidor de hoy la transformación deja de tener sentido, no va en la capa de abajo.*
-5. **Riesgos.** Qué puede salir mal y cómo se va a detectar. No es ceremonia: cada riesgo se traduce en una aserción o en una métrica de diagnóstico del artefacto.
-6. **Impacto.** Qué se rompe si esto cambia: artefactos aguas abajo, modelos semánticos, reportes.
+5. **Las decisiones de plataforma.** Modo de almacenamiento del modelo semántico, dónde se resuelve cada cálculo, estrategia de carga, convención de nombres. Se plantean y se justifican **siempre**, incluso cuando el usuario no las mencionó y aunque no conozca el tema: la consecuencia de equivocarlas la paga igual, y un valor por defecto que nadie eligió es una decisión que tomó la herramienta. Cada afirmación determinante sobre la plataforma se respalda con documentación oficial leída y fechada. Detalle en la skill `faw-disenar`.
+6. **Riesgos.** Qué puede salir mal y cómo se va a detectar. No es ceremonia: cada riesgo se traduce en una aserción o en una métrica de diagnóstico del artefacto.
+7. **Impacto.** Qué se rompe si esto cambia: artefactos aguas abajo, modelos semánticos, reportes.
 
 Se produce: el contrato y `<raíz de artefactos>/faw/<ticket>/diseno.md`.
 

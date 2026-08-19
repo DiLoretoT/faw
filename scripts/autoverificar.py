@@ -288,7 +288,9 @@ def caso_estado_contrato_multitabla(tmp: Path) -> tuple[int, int]:
     caja.mkdir()
     _write(caja / "core.dim_fecha.yml", CONTRATO_YML)
     _write(caja / "core.dim_moneda.yml", CONTRATO_B_YML)
-    _write(caja / "perfilado.md", PERFIL_MD)
+    # La ruta imita la estructura real (docs/faw/<ticket>/): la compuerta `perfil`
+    # exige que el recibo se pueda atribuir al ticket en curso.
+    _write(caja / "docs" / "faw" / "CANARY-1" / "perfilado.md", PERFIL_MD)
 
     def estado(*args: str) -> int:
         return _run("estado.py", list(args), caja)
@@ -299,7 +301,7 @@ def caso_estado_contrato_multitabla(tmp: Path) -> tuple[int, int]:
     if estado("mover", "--a", "PERFILADO",
               "--compuerta", "confirmacion_usuario=canary") != 0:
         raise RuntimeError("no se pudo mover a PERFILADO")
-    if estado("mover", "--a", "DISENO", "--compuerta", "perfil=perfilado.md") != 0:
+    if estado("mover", "--a", "DISENO", "--compuerta", "perfil=docs/faw/CANARY-1/perfilado.md") != 0:
         raise RuntimeError("no se pudo mover a DISENO")
 
     # Se verifica UNA sola de las dos tablas...
@@ -332,6 +334,12 @@ CASOS = [
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     tmp_root = Path(tempfile.mkdtemp(prefix="faw-autoverificar-"))
     resultados: list[tuple[str, bool, str]] = []
     try:

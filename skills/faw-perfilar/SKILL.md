@@ -41,7 +41,7 @@ for c in COLS_FECHA:
 df.printSchema()
 ```
 
-**La clave natural se prueba, no se copia de una ficha.** Ya pasó que una ficha mencionara una columna que no existía en la tabla.
+**La clave natural se prueba, no se copia de una ficha.** Lo que documenta un origen y lo que el origen es divergen con el tiempo: una ficha puede nombrar una columna que la tabla ya no tiene, o que nunca tuvo. La clave se confirma consultando la tabla.
 
 ### Gold existente (tiers `MODELO` y `REPORTE`)
 
@@ -85,7 +85,7 @@ Candidata: `[...]` — filas N, únicos N, duplicados 0.
 ## Cierre
 
 ```bash
-python scripts/estado.py mover --a DISENO --compuerta perfil=docs/faw/<ticket>/perfilado.md
+python <faw>/scripts/estado.py mover --a DISENO --compuerta perfil=docs/faw/<ticket>/perfilado.md
 ```
 
 ## Trampas

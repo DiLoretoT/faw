@@ -1,132 +1,121 @@
 # Instalación
 
-> La instalación anterior —pegar snippets en el `CLAUDE.md` y el
-> `settings.local.json` de cada proyecto— queda obsoleta: eso producía
-> exactamente el fallo que esta forma de instalar evita (el método escrito
-> pero no cargado, skills que no existían como comandos). Ahora FAW es
-> un **plugin de Claude Code** y se instala una vez.
-
 ## Requisitos
 
-- Claude Code 2.1.129 o posterior
-- Python 3.10+ en el PATH (los hooks y verificadores son Python)
+- Claude Code reciente (los hooks de este método usan matchers sobre herramientas MCP)
+- Python 3.10 o posterior en el PATH
 - `pip install pyyaml`
 - git en el PATH
 
 ## 1. Cargar el plugin
-
-**Instalación persistente** (recomendada — no depende de acordarse de un flag).
-El repo es su propio marketplace:
 
 ```bash
 claude plugin marketplace add DiLoretoT/faw
 claude plugin install faw@faw
 ```
 
-También funciona desde un clon local (`claude plugin marketplace add <ruta-del-clon>`),
-que es lo que conviene para desarrollar FAW mismo.
-
-Queda a scope user y carga en todas las sesiones. **Es un snapshot**: la copia
-vive en `~/.claude/plugins/cache/faw/faw/<version>/`, así que un cambio en el
-origen no aplica hasta actualizar:
+Queda instalado a nivel usuario y carga en todas las sesiones. Es una copia: vive en la caché de plugins, así que un cambio en el repositorio de origen no aplica hasta actualizar.
 
 ```bash
 claude plugin update faw@faw
 ```
 
-**Para una sola sesión** (desarrollo del propio FAW, prueba sin instalar):
+Para desarrollar el propio FAW, o para probarlo sin instalarlo, se puede cargar desde un clon local por una sola sesión:
 
 ```bash
 claude --plugin-dir <ruta-del-clon>
-```
-
-Instalado el plugin quedan registrados, sin más pasos:
-
-- los **4 hooks** (inyección de contexto por turno, compuerta de escritura,
-  compuerta de PR, pre-commit de metadata + plataforma),
-- las **6 skills** `/faw:faw-*` (clasificar, perfilar, validar, backlog, roadmap,
-  arquitectura),
-- el **agente** `faw-validador`.
-
-Verificar el manifest cada vez que se toque algo del plugin:
-
-```bash
 claude plugin validate <ruta-del-clon>
 ```
 
+Con el plugin instalado quedan registrados, sin más pasos, los hooks, las skills `/faw:faw-*` y el agente validador.
+
 ## 2. Activar FAW en un proyecto
 
-Los hooks son **opt-in por proyecto**: no hacen nada salvo que el repo tenga un
-directorio `.faw/` en la raíz.
+Los hooks son opt-in por proyecto: no hacen nada salvo que el repositorio tenga un directorio `.faw/` en la raíz.
 
 ```bash
 mkdir .faw
 ```
 
-Eso es todo. Desde ese momento:
+Desde ese momento, cada turno recibe el estado del método inyectado; la primera escritura sin trabajo clasificado se deniega; los commits pasan por las compuertas de metadata, plataforma y superficie; los pull requests pasan por el checklist de superficie; y las escrituras contra la plataforma por MCP quedan sujetas a la fase en curso.
 
-- cada turno recibe el estado del método inyectado (fase, tier, ticket, regla de la fase);
-- la primera escritura sin CLASIFICACIÓN registrado se **deniega**;
-- los commits pasan por las compuertas `metadata` y `plataforma`;
-- los `gh pr create/edit` pasan por el checklist de superficie de cliente.
+`.faw/` va al `.gitignore` del proyecto: el estado, los recibos y la configuración local son artefactos del método, y esa configuración puede contener nombres que no deben publicarse.
 
-`.faw/` va al `.gitignore` del proyecto: el estado, los recibos y la config son
-artefactos del método, no del entregable — y `config.json` puede declarar nombres
-que justamente no deben publicarse.
+## 3. Configurar el proyecto
 
-## 3. Compartirlo con el equipo
+```
+/faw:faw-configurar
+```
 
-El repo incluye `.claude-plugin/marketplace.json`, así que sirve de marketplace
-él mismo: cada persona del equipo corre los mismos dos comandos del paso 1 y
-queda con la misma versión, actualizable con `claude plugin update faw@faw`.
+Define dónde viven los tickets, si hay un ambiente de desarrollo separado del productivo, y qué canales de ejecución están disponibles. El resultado se escribe en `faw.json`, en la raíz del repositorio, y **se versiona**: son reglas de proceso del equipo, no configuración de una máquina.
 
-## 4. La capa de plataforma de Microsoft (complemento, no parte del plugin)
+```json
+{
+  "tickets": { "sistema": "interno" },
+  "ambientes": { "dev": false, "prd": true, "promocion": "manual" },
+  "canal": { "livy": false, "tabla_control": null }
+}
+```
 
-FAW asume disponible `microsoft/skills-for-fabric` — ver
-[`faw/reglas/skills-microsoft.md`](../faw/reglas/skills-microsoft.md) para el
-estado de instalación híbrido (plugin nativo `powerbi-authoring` + clon local,
-`~/skills-for-fabric` en los ejemplos) y las reglas de convivencia con FAW.
+Todo es opcional. Sin este archivo el método funciona igual, resolviendo cada dato ausente por la opción más estricta: un solo ambiente, tratado como productivo, con autorización por escrito antes de cada escritura.
+
+Lo que **no** va en ese archivo son los nombres de personas, los identificadores de otros proyectos y las rutas locales. Eso vive en `.faw/config.json`, que no se versiona:
+
+```json
+{
+  "personas_cliente": ["Apellido"],
+  "literales_internos": ["repo-interno"],
+  "artefactos_en": "/ruta/a/la/documentacion/interna"
+}
+```
+
+Las dos listas alimentan la compuerta de superficie, que frena el commit o el pull request que las contenga. `artefactos_en` se usa cuando el razonamiento de diseño no debe quedar en un repositorio que lee un tercero.
+
+## 4. La capa de plataforma de Microsoft
+
+FAW gobierna el proceso y deja la mecánica de cada artefacto a las skills oficiales, que se instalan aparte. Son dos bundles: el de Power BI no viene incluido en el de Fabric.
 
 ```bash
-git -C ~/skills-for-fabric pull --ff-only   # si hace >7 días del último
+claude plugin marketplace add microsoft/skills-for-fabric
+claude plugin install fabric-skills@fabric-collection
+claude plugin install powerbi-authoring@fabric-collection
 ```
+
+Detalle y reglas de convivencia en [`faw/reglas/skills-microsoft.md`](../faw/reglas/skills-microsoft.md).
 
 ## Verificar que funciona
 
-Las tres señales, en orden de rapidez (detalle en GUIA_COMPLETA §10d):
-
 ```bash
-# 1. La inyección por turno responde para un repo activado (ruta = tu clon/instalación):
-echo '{"cwd":"C:/ruta/al/repo"}' | python <ruta-de-faw>/faw/hooks/inyectar_contexto.py
+# 1. La inyección por turno responde para un proyecto activado:
+echo '{"cwd":"/ruta/al/proyecto"}' | python <faw>/faw/hooks/inyectar_contexto.py
 
 # 2. Los verificadores no se rompieron con el tiempo:
-python <ruta-de-faw>/scripts/autoverificar.py
+python <faw>/scripts/autoverificar.py
 
-# 3. La prueba de fuego: pedirle a Claude un Write con el estado en IDLE.
-#    Tiene que denegarlo citando la clasificación.
+# 3. La prueba de fuego: pedirle a Claude una escritura sin trabajo clasificado.
+#    Tiene que denegarla citando la clasificación.
 ```
 
-## Los overrides de un solo uso
+La tercera es la que importa. Un hook que se rompe termina con un código de salida distinto de cero, y eso se trata como no bloqueante, así que un hook roto se ve exactamente igual que un hook que aprueba. Se prueban ejecutándolos.
 
-Cuando una compuerta de commit bloquea algo **intencional**, el destrabe es un
-archivo que se consume solo (no queda como bypass permanente):
+## Los permisos de un solo uso
+
+Cuando una compuerta bloquea algo intencional, el destrabe es un archivo que se consume al usarse, para que una excepción puntual no quede como un permiso permanente que nadie recuerda haber dado.
 
 | Compuerta | Archivo |
 |---|---|
-| `metadata` (migración real de lakehouse, etc.) | `.faw/metadata-permitida.txt` con el motivo |
-| `plataforma` (ej. sin red para resolver una URL) | `.faw/plataforma-permitida.txt` con el motivo |
+| `metadata` | `.faw/metadata-permitida.txt` con el motivo |
+| `plataforma` | `.faw/plataforma-permitida.txt` con el motivo |
+| `superficie` | `.faw/superficie-permitida.txt` con el motivo |
+| Escritura contra la plataforma, en proyectos de ambiente único | `.faw/autorizacion-tenant.txt` con la operación y el motivo |
 
-## Los límites, dicho acá también
+Los hooks corren **antes** del comando, así que escribir el archivo y ejecutar la acción en la misma llamada no funciona: cuando el hook mira, el archivo todavía no existe. Van en dos pasos.
 
-Livy no se puede bloquear honestamente: es código Spark arbitrario. Ahí el
-método **detecta, no previene**. Lo mismo aplica hoy a escrituras vía el MCP de
-Fabric y a archivos escritos desde `Bash` (heredoc, `>`), que no pasan por el
-hook de escritura — están en GUIA_COMPLETA §14 como los huecos siguientes a
-cerrar. Un método que prometiera bloquearlos estaría mintiendo sobre una
-compuerta.
+## Los límites
 
-## Desinstalar / desactivar
+El código arbitrario que corre dentro de una sesión Spark no se puede inspeccionar antes de que se ejecute, y los archivos escritos desde la terminal con redirección o documentos embebidos no pasan por el hook de escritura. Ahí el método detecta, no previene. Un método que prometiera bloquearlos estaría mintiendo sobre una compuerta.
 
-- Desactivar en un proyecto: borrar `.faw/` (los hooks vuelven a no hacer nada).
-- Descargar el plugin: no pasar `--plugin-dir` (o `claude plugin uninstall faw`
-  si se instaló por marketplace).
+## Desinstalar
+
+- Desactivar en un proyecto: borrar `.faw/`, y los hooks vuelven a no hacer nada.
+- Quitar el plugin: `claude plugin uninstall faw`.

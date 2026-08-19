@@ -139,8 +139,6 @@ def main() -> int:
             "Antes del primer Write/Edit hay que clasificar: clasificar tier, definir que entra y "
             "que NO, y esperar tu OK. La skill es /faw:faw-clasificar. El hook de escritura va a "
             "denegar cualquier edicion hasta que exista la clasificación.",
-            "Antes del primer Edit/Write/commit sobre un repo: leer ai_sessions/REGISTRY.md "
-            "(coordinacion multi-sesion).",
             LINEA_ESTADO,
         ]
     else:

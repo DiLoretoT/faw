@@ -81,6 +81,12 @@ def campos_del_modelo(modelo: dict) -> set[str]:
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     p = argparse.ArgumentParser(description="Compuerta de reporte de FAW")
     p.add_argument("--reporte", type=Path, required=True,
                    help="Carpeta del proyecto de reporte (.Report)")

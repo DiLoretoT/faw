@@ -95,6 +95,12 @@ def _match_seccion(secciones: dict[str, str], clave: str) -> tuple[str, str] | N
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     p = argparse.ArgumentParser(description="Compuerta de brief de FAW (tier REPORTE)")
     p.add_argument("--ticket", help="Ticket; busca docs/faw/<ticket>/brief.md")
     p.add_argument("--brief", type=Path, help="Ruta explicita al brief")

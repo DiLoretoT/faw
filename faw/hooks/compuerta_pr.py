@@ -25,8 +25,8 @@ escribe siempre como si lo leyera el destinatario del repo.
 5. Hablar del cliente en tercera persona ("el cliente", "llevar al cliente"),
    y asignar tareas a gente del cliente.
 
-Opt-in: solo actua si el proyecto tiene `.faw/`. Y solo sobre `gh pr create`
-o `gh pr edit` con `--body`.
+Opt-in: solo actua si el proyecto tiene `.faw/`, y solo sobre los comandos que
+crean o editan un PR (`gh pr create|edit`, `az repos pr create|update`).
 """
 
 from __future__ import annotations
@@ -41,7 +41,11 @@ import superficie  # noqa: E402
 
 LIMITE_TEXTO = 8
 
-RE_GH_PR = re.compile(r"\bgh\s+pr\s+(create|edit)\b")
+# Los dos clientes de linea de comandos que crean o editan un PR. Cubrir solo
+# uno dejaba la compuerta sin efecto en cualquier proyecto que usara el otro,
+# y sin ningun aviso: la compuerta no se salteaba, directamente no existia.
+RE_PR = re.compile(r"\bgh\s+pr\s+(create|edit)\b"
+                   r"|\baz\s+repos\s+pr\s+(create|update)\b")
 
 # Solo aplica al cuerpo de un PR, no a los archivos: un notebook si puede
 # documentar como se valido. Por eso vive aca y no en superficie.py.
@@ -139,7 +143,7 @@ def main() -> int:
         return 0
 
     comando = (entrada.get("tool_input") or {}).get("command", "") or ""
-    if not RE_GH_PR.search(comando):
+    if not RE_PR.search(comando):
         return 0
 
     cuerpo = _body(comando, repo)

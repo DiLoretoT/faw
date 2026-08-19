@@ -12,7 +12,7 @@ Fase 1 de FAW. **No construyas nada todavía.**
 1. **Reformulá el pedido en una frase.** Si la reformulación no te sale obvia, preguntá antes de seguir.
 
 2. **Mirá el estado real**, no lo que suponés:
-   - `python scripts/estado.py estado`
+   - `python <faw>/scripts/estado.py estado`
    - `git status --porcelain` y rama actual
    - los artefactos que el pedido toca — ¿existen?, ¿tienen contrato?
 
@@ -30,9 +30,13 @@ Fase 1 de FAW. **No construyas nada todavía.**
 
    Ante la duda entre `CAMBIO-MENOR` y `ARTEFACTO`, es `ARTEFACTO`.
 
-   `MODELO` y `REPORTE` eran un solo tier (`SEMANTICO`) y se separaron: el rigor de compuertas
-   fuertes responde a errores de **modelo** — relaciones, storage mode, propiedades —, no de
-   reporte. Cobrarle al reporte el rigor del modelo era un error de calibración.
+   **`MODELO` y `REPORTE` son tiers distintos porque fallan distinto.** Un modelo falla en
+   silencio: una relación invertida o un storage mode equivocado devuelve totales plausibles que
+   nadie cuestiona, y por eso paga compuertas fuertes que verifican relaciones, propiedades y
+   modo de almacenamiento contra el artefacto real. Un reporte falla a la vista —un visual roto
+   se nota—, y su riesgo real es otro: construir con precisión algo que nadie pidió. Por eso
+   `REPORTE` paga un brief acordado antes de construir en vez del rigor de esquema. Cobrarle a
+   un reporte las compuertas del modelo cuesta tiempo sin cerrar ningún fallo.
 
 6. **Si el tier es `REPORTE`, la clasificación incluye el brief.** No se entra a construir sin haber
    acordado **con el usuario** para qué existe el reporte: objetivo, audiencia, las preguntas que
@@ -67,7 +71,7 @@ Próximo   : <fase siguiente> — <acción concreta que vas a hacer ahí, no sol
 Con el OK:
 
 ```bash
-python scripts/estado.py iniciar --ticket <T> --tier <TIER> --titulo "<t>"
+python <faw>/scripts/estado.py iniciar --ticket <T> --tier <TIER> --titulo "<t>"
 ```
 
 ## Trampas

@@ -111,9 +111,15 @@ def lineas_agregadas(repo: Path) -> list[tuple[str, int, str]]:
     Lineas que el commit AGREGA, del diff staged. Devuelve (archivo, nro, texto).
 
     Solo lineas agregadas: lo que ya estaba se corrige aparte, no bloqueando cada
-    commit que lo roce. `.faw/` no cuenta (no se versiona) y `docs/faw/` tampoco:
-    son artefactos del propio metodo — si el lector del repo no debe verlos, se
-    apuntan fuera del repo con `artefactos_en` (fases.md).
+    commit que lo roce.
+
+    Quedan fuera del chequeo `.faw/` (que no se versiona) y `docs/faw/`, que son
+    artefactos del propio metodo. La excepcion a la excepcion es
+    `docs/faw/tickets/`, que SI se revisa: un ticket contiene por naturaleza
+    preguntas abiertas y tareas asignadas a personas, que es exactamente el
+    contenido que no debe llegar a un repo que lee un tercero. Eximirlo por vivir
+    bajo `docs/faw/` seria abrir la puerta mas ancha justo donde pasa el material
+    mas sensible.
     """
     try:
         r = subprocess.run(["git", "diff", "--cached", "--unified=0", "--no-color"],
@@ -136,8 +142,9 @@ def lineas_agregadas(repo: Path) -> list[tuple[str, int, str]]:
             nro = int(m.group(1)) if m else 0
             continue
         if linea.startswith("+") and not linea.startswith("+++"):
-            if (archivo and archivo != "/dev/null"
-                    and not archivo.startswith((".faw/", "docs/faw/"))):
+            exento = (archivo.startswith((".faw/", "docs/faw/"))
+                      and not archivo.startswith("docs/faw/tickets/"))
+            if archivo and archivo != "/dev/null" and not exento:
                 salida.append((archivo, nro, linea[1:]))
             nro += 1
     return salida

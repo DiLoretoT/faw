@@ -135,6 +135,12 @@ def analizar(diff: str) -> tuple[dict[str, list[str]], int, int]:
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     p = argparse.ArgumentParser(description="Compuerta de metadata de FAW")
     p.add_argument("--rango", help="rango de commits, ej. abc123..HEAD")
     p.add_argument("--permitir-metadata", metavar="MOTIVO",

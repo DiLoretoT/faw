@@ -197,6 +197,12 @@ def comparar_esquema(contrato: dict, snap: dict, r: Resultado) -> None:
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     p = argparse.ArgumentParser(description="Compuerta de esquema de FAW")
     p.add_argument("contrato", type=Path)
     p.add_argument("--esquema", type=Path,

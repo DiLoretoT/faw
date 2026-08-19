@@ -49,7 +49,7 @@ print(json.dumps({
 Después:
 
 ```bash
-python scripts/verificar_contrato.py contratos/<tabla>.yml --esquema esquema.json
+python <faw>/scripts/verificar_contrato.py contratos/<tabla>.yml --esquema esquema.json
 ```
 
 **Nunca reportes "validado" con un conteo de filas.** Filas y columnas, siempre.
