@@ -71,9 +71,31 @@ No hace falta un ambiente de desarrollo separado. Un único workspace es un patr
 
 ## Origen
 
-Inspirado en [dilux-agentic-workflow](https://github.com/soydiloreto/dilux-agentic-workflow), del que toma las fases con compuertas aplicadas fuera del modelo, los tiers, la escala honesta de fuerza de cada compuerta, y que valide quien no construyó. Lo que cambia es el objeto: aquel verifica que el código compile y los tests pasen; este verifica que una tabla tenga las columnas que dice tener.
+FAW está inspirado en **[Dilux Agentic Workflow (DAW)](https://github.com/soydiloreto/dilux-agentic-workflow)**, un método de fases con compuertas para pipelines de desarrollo de software. De ahí vienen cuatro ideas que sostienen todo lo demás:
+
+- Fases con compuertas **aplicadas fuera del modelo**, para que no dependan de que el agente se acuerde.
+- **Tiers**, para no cobrarle a un ajuste de tres líneas el proceso de una tabla nueva.
+- La **escala honesta de fuerza** de cada compuerta: decir cuál se puede satisfacer con una declaración y cuál no.
+- Que **valide quien no construyó**.
+
+Lo que cambia es el objeto que se verifica. DAW comprueba que el código compile y que los tests pasen; FAW comprueba que una tabla tenga las columnas que dice tener y que un modelo semántico apunte a donde dice apuntar. La diferencia importa porque los modos de fallo no se parecen: el software roto grita, el dato incorrecto no.
+
+Hay una quinta cosa que FAW toma de DAW y que no es una funcionalidad sino una forma de trabajar: **el método se construye de forma iterativa e incremental, usándolo**. Cada regla que existe llegó porque algo falló de una manera concreta y quedó claro qué habría hecho falta para atajarlo. Ninguna se agregó porque sonara prolija.
 
 La mecánica de plataforma no vive acá a propósito: la mantiene Microsoft en [`skills-for-fabric`](https://github.com/microsoft/skills-for-fabric), y FAW la consume como capa complementaria. FAW manda en proceso, esas skills mandan en mecánica.
+
+## Esto está en construcción, y el feedback es lo que lo hace crecer
+
+FAW no está terminado ni pretende estarlo. Es un método que gana valor a medida que se usa contra situaciones reales: cada proyecto distinto expone un supuesto que no era universal, un fallo que ninguna compuerta atajaba, o una regla que resultó más rígida de lo que el problema pedía. La sección de límites conocidos de la [guía](GUIA_COMPLETA.md) está escrita para que se vea qué falta, en vez de disimularlo.
+
+**El aporte más útil que podés hacer es contar un fallo concreto.** No hace falta que propongas la solución: el método tiene una regla que se aplica a sí mismo, y es que una regla sin un modo de fallo específico detrás no entra. Entonces lo valioso es la otra mitad, la que solo tiene quien lo vivió:
+
+- Un dato incorrecto que llegó a producción sin hacer ruido, y qué lo habría detectado.
+- Una compuerta que te frenó sin motivo, o que te dejó pasar algo que no debía.
+- Un supuesto de FAW que no aplica a cómo trabaja tu equipo.
+- Una afirmación sobre la plataforma que esté desactualizada o directamente mal.
+
+Las issues y los pull requests son bienvenidos. Si algo del método te resultó confuso al leerlo, eso también es un reporte válido: la documentación que no se entiende es documentación que no se cumple.
 
 ## Licencia
 
