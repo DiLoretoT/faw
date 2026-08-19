@@ -8,13 +8,13 @@
 ## Objective
 
 <What this report exists for. Which decision it enables, or which question it
-closes. If the answer is "to see the data", there is no objective yet: that is an
+closes. If the answer is "to see the data", there is no objective yet. That is an
 exploration, and it goes under the EXPLORATION tier.>
 
 ## Audience
 
 <Who will open it, in what role, and how often. A concrete role, not "the
-business". If it is for internal use by the technical team, say so explicitly: it
+business". If it is for internal use by the technical team, say so explicitly. It
 changes the level of polish and the client surface rules.>
 
 ## Questions it answers

@@ -2,7 +2,7 @@
 
 FAW governs the **process**: what gets verified, in what order, with what
 evidence. It does not teach how to write an Eventstream or which API deploys a
-semantic model, and it should not: that knowledge changes with every release, and
+semantic model, and it should not. That knowledge changes with every release, and
 maintaining it by hand guarantees it ages badly without anyone noticing.
 
 Microsoft maintains that layer in
@@ -16,7 +16,7 @@ no formal gates and no data contracts. That is what FAW adds.
 
 ## Installation
 
-It installs as a plugin, like FAW. There are **two separate bundles**: the Power
+It installs as a plugin, like FAW. There are **two separate bundles**. The Power
 BI one is not included in the Fabric one.
 
 ```bash
@@ -27,7 +27,7 @@ claude plugin install powerbi-authoring@fabric-collection
 
 It can also be consumed from a local clone of the repository, which is the route
 for editors that do not support plugins. If a clone is used, declare its path in
-`faw.json` under `channel.microsoft_skills`, and update it regularly: an outdated
+`faw.json` under `channel.microsoft_skills`, and update it regularly. An outdated
 platform skill is worse than no skill, because it states with confidence
 something that stopped being true.
 
@@ -37,7 +37,7 @@ git -C <clone-path> pull --ff-only
 
 ## Which skill to read, and why there is no exhaustive table here
 
-Microsoft reorganizes these skills between versions: bundles get merged, folders
+Microsoft reorganizes these skills between versions. Bundles get merged, folders
 get renamed, and skills that are no longer maintained get removed. A table of
 paths copied into this file goes stale with nothing to warn about it, and the
 method would end up sending the agent to read files that no longer exist.
@@ -70,7 +70,7 @@ them, keep in mind the distinction Microsoft's own documentation makes:
 - The **remote** Fabric and Power BI servers are meant for querying and for
   management operations, with their own authentication and audit logging.
 - The **local** servers are the ones that can **write** a complete semantic model.
-- The SQL endpoint is read-only by construction: it does not accept data
+- The SQL endpoint is read-only by construction. It does not accept data
   modification.
 
 Microsoft states explicitly that an autonomous or misconfigured MCP client can
@@ -82,14 +82,14 @@ through MCP (`faw/hooks/mcp_gate.py`) instead of trusting the server.
 
 1. **FAW governs process; the Microsoft skills govern mechanics.** If one of them
    says "deploy straight to the workspace" and FAW says "through a pull request",
-   FAW wins: those skills do not know the project's change channel or who reads
+   FAW wins. Those skills do not know the project's change channel or who reads
    each surface.
 2. **No write operation a skill proposes is exempt from the approval of the
    turn.** The skill says *how*; the user gives the permission.
 3. **Their tool decision trees are adopted.** That is exactly the kind of platform
    knowledge that is not worth maintaining separately.
 4. **They are a source of mechanics, not of product behavior.** For a definitive
-   statement such as "X cannot be done", principle 6 still applies: official
+   statement such as "X cannot be done", principle 6 still applies. Official
    documentation read, with the date of the page. A skill can be out of date like
    any other text.
 5. **Never edit the files of the clone.** They are consumed as they are; anything

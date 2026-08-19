@@ -6,7 +6,7 @@ description: Architecture review of what is being built, contrasting the decisio
 # Architecture review
 
 Contrasts what is being built against what the platform actually supports and what
-the rest of the field does. **This is not a code review**: it does not look at
+the rest of the field does. **This is not a code review**. It does not look at
 whether the code is well written, it looks at whether the decisions are the right
 ones.
 
@@ -14,7 +14,7 @@ ones.
 
 - When closing a stage, before the decision becomes expensive to change.
 - **Before replicating a pattern to another domain.** This is the point of highest
-  leverage: a decision copied four times becomes irreversible.
+  leverage. A decision copied four times becomes irreversible.
 - When a decision starts to hurt and it is not clear whether the problem is the
   decision or the implementation.
 - When the vendor changes something relevant.
@@ -85,7 +85,7 @@ For anything that is not "Confirmed": **what changing it would cost today**, and
 
 ### 5. Look for what was never decided
 
-Sometimes the most important finding is a gap: something nobody decided that is
+Sometimes the most important finding is a gap. Something nobody decided that is
 resolved by a default. A default nobody chose is a decision the tool made for you.
 
 ## What to produce
@@ -116,18 +116,18 @@ Scope: <what was reviewed>
 - <statements that stand as your own judgment, declared as such>
 ```
 
-If the review changes a decision, **update the project architecture document**: the
+If the review changes a decision, **update the project architecture document**. The
 verdict is useless if the next session reads the old decision.
 
 ## Traps
 
 - **Citing a search engine summary as if it were the documentation.** It is the
-  most common failure and the most damaging: the design gets built on something
+  most common failure and the most damaging. The design gets built on something
   false.
 - **Reviewing only what hurts.** The decisions that are not bothering anyone also
   age; naming and grain make the least noise and cost the most to change.
 - **Confusing "the community does it this way" with "it is correct".** And the
-  inverse too: the official documentation recommends the general case, not
+  inverse too. The official documentation recommends the general case, not
   necessarily yours.
 - **Finishing without a verdict.** A review that says "there are options" is
   useless. Every decision comes out with a verdict and, where it applies, a

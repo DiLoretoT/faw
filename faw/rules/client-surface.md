@@ -1,11 +1,11 @@
 # Client surface
 
-Before writing anywhere: who reads this?
+Before writing anywhere, ask who reads it.
 
 FAW does not distinguish own repositories from client repositories. Every
-governed repository is treated as **client surface**: whatever is written there is
+governed repository is treated as **client surface**. Whatever is written there is
 read by the recipient of the repository, whether that is a client, another team,
-or any third party. The distinction is deliberately absent: it is a decision made
+or any third party. The distinction is deliberately absent. It is a decision made
 once, which removes the chance of getting it wrong repository by repository.
 
 ## The map

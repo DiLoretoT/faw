@@ -15,7 +15,7 @@ claude plugin marketplace add DiLoretoT/faw
 claude plugin install faw@faw
 ```
 
-It installs at user level and loads in every session. It is a copy: it lives in the
+It installs at user level and loads in every session. It is a copy. It lives in the
 plugin cache, so a change in the source repository does not apply until it is
 updated.
 
@@ -36,19 +36,19 @@ agent are registered with no further steps.
 
 ## 2. Activate FAW in a project
 
-The hooks are opt-in per project: they do nothing unless the repository has a
+The hooks are opt-in per project. They do nothing unless the repository has a
 `.faw/` directory at its root.
 
 ```bash
 mkdir .faw
 ```
 
-From that moment: every turn receives the method state; the first write with no
+From that moment. Every turn receives the method state; the first write with no
 classified work is denied; commits pass through the metadata, platform and surface
 gates; pull requests pass through the client-surface checklist; and writes to the
 platform through MCP servers are subject to the current phase.
 
-`.faw/` goes into the project `.gitignore`: the state, the receipts and the local
+`.faw/` goes into the project `.gitignore`. The state, the receipts and the local
 configuration are artifacts of the method, and that configuration can contain names
 that should not be published.
 
@@ -60,7 +60,7 @@ that should not be published.
 
 It defines where the tickets live, whether there is a development environment
 separate from production, and which execution channels are available. The result is
-written to `faw.json` at the root of the repository, and **it is versioned**: these
+written to `faw.json` at the root of the repository, and **it is versioned**. These
 are the team's process rules, not one machine's settings.
 
 ```json
@@ -93,7 +93,7 @@ repository a third party reads.
 ## 4. The Microsoft platform layer
 
 FAW governs the process and leaves the mechanics of each artifact to the official
-skills, which install separately. There are two bundles: the Power BI one is not
+skills, which install separately. There are two bundles. The Power BI one is not
 included in the Fabric one.
 
 ```bash
@@ -136,7 +136,7 @@ remembers granting.
 | Writes to the platform, in single-environment projects | `.faw/tenant-authorization.txt` with the operation and the reason |
 
 The hooks run **before** the command, so writing the file and performing the action
-in the same call does not work: when the hook looks, the file does not exist yet. It
+in the same call does not work. When the hook looks, the file does not exist yet. It
 takes two steps.
 
 ## The limits

@@ -26,7 +26,7 @@ when the project uses the internal registry.
 `faw.json`. With an external tracker the identifier comes from there and is passed
 with `--ticket`; with the internal registry FAW generates it and creates the
 ticket file under `docs/faw/tickets/`. Whether the external tracker has an MCP
-server connected changes who operates it, not the method: with MCP the agent
+server connected changes who operates it, not the method. With MCP the agent
 reads and updates it; without MCP the user operates their tool and reports the
 identifier.
 
@@ -43,17 +43,17 @@ python <faw>/scripts/state.py start --tier ARTIFACT --title "..." \
 ```
 
 When the real work opens, **do not ask again what the user has already
-answered**: restate in one line what was decided and ask only for what is new.
+answered**. Restate in one line what was decided and ask only for what is new.
 
 **Closing, checkpoint 1 of 3:** the user confirms tier and scope. This is where
 how much process the rest will cost gets decided.
 
 **If the tier is `REPORT`, classification includes the brief.** Building a report
-does not start without agreeing **with the user** what it exists for: objective,
+does not start without agreeing **with the user** what it exists for. Objective,
 audience, the questions it has to answer, what is out of scope, the data source,
 and who validates the numbers. It is filled in at `docs/faw/<ticket>/brief.md`
 from `faw/contracts/TEMPLATE.brief.md`, and `scripts/verify_brief.py` checks it.
-Inferring the scope by reading the semantic model is not classifying: it is
+Inferring the scope by reading the semantic model is not classifying. It is
 writing the brief alone, without the conversation that validates it. The official
 report planning skill covers the mechanics of that conversation; read it first.
 
@@ -119,19 +119,19 @@ What happens:
    definitive statement about the platform is backed by documentation that was
    read, with its date. Detail in the `faw-design` skill.
 6. **Risks.** What can go wrong and how it will be detected. This is not
-   ceremony: each risk becomes an assertion or a diagnostic metric in the
+   ceremony. Each risk becomes an assertion or a diagnostic metric in the
    artifact.
 7. **Impact.** What breaks if this changes: downstream artifacts, semantic
    models, reports.
 
-Produced: the contract and `<artifact root>/faw/<ticket>/design.md`.
+Produced. The contract and `<artifact root>/faw/<ticket>/design.md`.
 
 ### The artifact root is the user's decision
 
 Contracts, profiling receipts and design documents contain long reasoning,
 discarded alternatives, open findings and business questions. By default they live
 in the working repository, under `contracts/` and `docs/faw/<ticket>/`, and the
-`surface` gate does not inspect those paths: they are artifacts of the method
+`surface` gate does not inspect those paths. They are artifacts of the method
 itself.
 
 That is only correct if whoever reads the repository can read that reasoning. When
@@ -147,7 +147,7 @@ repository in `.faw/config.json`, which is not versioned:
 }
 ```
 
-FAW does not infer whose repository this is: it treats them all the same, as
+FAW does not infer whose repository this is. It treats them all the same, as
 surface a third party reads (see [`client-surface.md`](client-surface.md)), and
 the user declares what must not leak. `client_people` and `internal_literals` feed
 the `surface` gate, which stops the commit or the pull request that names a person
@@ -159,7 +159,7 @@ declared explicitly when that reader should not.
 
 **Closing, checkpoint 2 of 3:** the contract exists, is syntactically valid,
 declares grain, key and columns, **and the user confirms the design before
-building**. Not only for the first artifact in a new domain: always, in `ARTIFACT`
+building**. Not only for the first artifact in a new domain. Always, in `ARTIFACT`
 and `MODEL`. This is where a wrong decision costs the least.
 
 ---
@@ -171,7 +171,7 @@ and `MODEL`. This is where a wrong decision costs the least.
 What happens:
 0. Check which official platform skills or tools are available in the session and
    state which one is being used, or why none of them applies. Do not assume the
-   catalog from memory: the vendor reorganizes it between releases. Detail in
+   catalog from memory. The vendor reorganizes it between releases. Detail in
    [`microsoft-skills.md`](microsoft-skills.md).
 1. Implement the artifact.
 2. **Validations go inside the artifact**, not in a separate script: natural key
@@ -180,7 +180,7 @@ What happens:
 3. Run it against the environment, with explicit authorization if it writes.
 4. Report rows **and** columns, and the result of the assertions.
 
-Produced: the code, and the table or artifact written to the environment.
+Produced. The code, and the table or artifact written to the environment.
 
 **Closing, the `assertions`, `authorization` and `tooling` gates, without stopping
 as a process step.** They ran and passed, there was explicit approval for each

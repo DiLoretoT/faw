@@ -66,7 +66,7 @@ Is the artifact count consistent with what was measured at the source?
 
 If it differs, that has to be explained by a filter **declared in the design**. A
 difference with no explanation is a finding, not a detail. And a filter that
-explains the difference but does not appear in the design is also a finding: it
+explains the difference but does not appear in the design is also a finding. It
 means the artifact does something nobody decided.
 
 ### 3. Quality rules from the contract
@@ -77,7 +77,7 @@ nulls where declared, maximum percentages, closed domains.
 ### 4. Semantic model, where it applies
 
 Download the definition and run `scripts/verify_model.py`. **Do not review the
-model by looking at the diagram**: it does not show which column each relationship
+model by looking at the diagram.** It does not show which column each relationship
 lands on, which is exactly where the error hides.
 
 ### 5. Internal coherence of the artifact

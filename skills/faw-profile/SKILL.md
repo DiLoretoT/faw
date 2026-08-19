@@ -27,7 +27,7 @@ authorization first.
 # Rows
 df.count()
 
-# Candidate natural key: this is what decides whether it is a key
+# Candidate natural key. This is what decides whether it is a key
 total = df.count()
 unique = df.select(*KEY).distinct().count()
 print(f"rows={total}  unique={unique}  duplicates={total - unique}")
@@ -46,7 +46,7 @@ df.printSchema()
 ```
 
 **The natural key is proven, not copied from a specification.** What documents a
-source and what the source is diverge over time: a specification can name a column
+source and what the source is diverge over time. A specification can name a column
 the table no longer has, or never had. The key is confirmed by querying the table.
 
 ### An existing curated layer (`MODEL` and `REPORT` tiers)
@@ -57,10 +57,10 @@ the table no longer has, or never had. The key is confirmed by querying the tabl
 
 ### A symptom (`INCIDENT` tier)
 
-What was expected, what was obtained, since when. History of the artifact: last
+What was expected, what was obtained, since when. History of the artifact. Last
 write, last schema change.
 
-Urgency does not exempt anyone from measuring: a diagnosis is measured, not
+Urgency does not exempt anyone from measuring. A diagnosis is measured, not
 assumed.
 
 ## What to produce
@@ -102,6 +102,6 @@ python <faw>/scripts/state.py move --to DESIGN \
 - **Reporting a number without having measured it.** If you did not measure it,
   write "not measured".
 - **Profiling only what you plan to use.** The columns you discard get measured
-  too: the decision to discard them has to rest on something.
+  too. The decision to discard them has to rest on something.
 - **Trusting prior documentation** about keys, types or cardinalities. It gets
   verified against the rows.

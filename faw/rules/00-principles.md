@@ -1,4 +1,4 @@
-# Principles: they apply in every phase
+# Principles, applied in every phase
 
 These fourteen rules do not depend on the tier or the phase. If one of them
 conflicts with a specific instruction, the rule wins and the conflict is stated.
@@ -47,7 +47,7 @@ data work, the number *is* the deliverable.
 A table is never considered validated on a row count. The name and type of every
 column are compared against its contract.
 
-The failure this closes: a table can match the expected number of rows exactly
+The failure this closes. A table can match the expected number of rows exactly
 and have half the columns it declares. Whoever looks only at the count passes it,
 and the count was correct.
 
@@ -67,7 +67,7 @@ Before asking, state precisely: which table, which operation, how many rows are
 affected, what gets created and what gets deleted. Afterwards, report what
 actually happened.
 
-The limit of the backing: the hook reaches MCP tools, not the code that runs
+The limit of the backing. The hook reaches MCP tools, not the code that runs
 inside a Spark session. There the principle is reading again.
 
 ## 4. Silence is the enemy
@@ -77,7 +77,7 @@ inside a Spark session. There the principle is reading again.
 Between an artifact that fails and one that returns a doubtful number, always the
 one that fails.
 
-- No foreign key is left null: it goes to a **visible** Unknown member.
+- No foreign key is left null. It goes to a **visible** Unknown member.
 - Every table carries a natural key assertion that stops execution on duplicates.
 - An unintended schema change makes the write fail instead of overwriting.
 - Values that fit no category get their own category; they are not folded into
@@ -88,7 +88,7 @@ one that fails.
 *Backing: reading. This is a design criterion, not a mechanical rule.*
 
 The default is to materialize a derived column upstream rather than in the
-consumption layer. The reason is cost and consistency: what is computed once on
+consumption layer. The reason is cost and consistency. What is computed once on
 write is computed once, and every consumer sees the same value, while what is
 computed in the model is recomputed per query and can differ between two reports
 that define the same thing twice.
@@ -132,7 +132,7 @@ observation of your own**, never as documented behavior.
 Before writing anywhere, ask who reads it. Detail in
 [`client-surface.md`](client-surface.md).
 
-In short: a remote repository is **not** an internal workspace. FAW treats every
+In short. A remote repository is **not** an internal workspace. FAW treats every
 governed repository as client surface, without distinguishing whose it is.
 
 ## 8. Do not fight the serializer
@@ -169,7 +169,7 @@ trimmed, and validating it as if it were the real one.
 A pipeline or notebook with a "Succeeded" status does not prove that anything
 happened. A copy activity against an empty source, a merge that matched no rows,
 a notebook whose guard assertion never fired because the input frame arrived
-empty: all of them finish successfully.
+empty. All of them finish successfully.
 
 - Never read a job status as evidence that the work was done.
 - Compare the real delta -- rows written, rows affected -- against an expected
@@ -184,7 +184,7 @@ empty: all of them finish successfully.
 The repository declares the intent; the deployed environment is the source of
 verification. Do not assume they match without checking.
 
-This generalizes what the `metadata` gate applies to a diff: a change that looks
+This generalizes what the `metadata` gate applies to a diff. A change that looks
 harmless can alter configuration nobody is looking at. The same pattern shows up
 elsewhere:
 
@@ -230,10 +230,10 @@ others are not being followed.
 
 Every checkpoint question ("shall I close here?", "shall we start?") is preceded
 by **one concrete sentence about what happens next** if the user says yes. Naming
-the next phase is not enough: that says *where*, not *what*.
+the next phase is not enough. That says *where*, not *what*.
 
 Wrong: *"Shall I close this and move to profiling?"*
-Right: *"I am going to profile the source: run a total row count against a count
+Right: *"I am going to profile the source. Run a total row count against a count
 of distinct keys, and measure nulls per column. Shall I go ahead?"*
 
 Without the action sentence, the user approves a phase in the abstract and finds
@@ -241,5 +241,5 @@ out what the agent did once it is done. With it, the approval is about something
 concrete and the deviation shows up before it happens.
 
 Any skill that closes with a question puts that sentence first. If the real
-answer depends on what gets found, say so: do not invent a generic sentence to
+answer depends on what gets found, say so. Do not invent a generic sentence to
 satisfy the form.

@@ -47,7 +47,7 @@ commit, it does not need the conversation.
 Offer that review even when the user did not ask for it and does not know the
 topic, because the consequence of getting it wrong gets paid either way. When they
 have no formed opinion, do not choose silently for them and do not deliver a
-lecture: explain in two or three sentences what each option implies **for this
+lecture. Explain in two or three sentences what each option implies **for this
 specific case**, recommend one with its rationale, and move on.
 
 ### Where they tend to hide
@@ -91,7 +91,7 @@ the source is not understood, a business definition is missing, or a platform
 decision depends on data nobody has measured.
 
 In that case **do not push forward on assumptions**. Offer the user a prior
-consultation: a `QUESTION` tier piece of work scoped to resolving exactly those
+consultation. A `QUESTION` tier piece of work scoped to resolving exactly those
 doubts, which reads whatever documentation is needed, measures the source, and
 returns a document with the answers.
 
@@ -104,7 +104,7 @@ python <faw>/scripts/state.py start --tier ARTIFACT --title "..." \
 
 The point of doing it this way is that the information does not get lost between
 one conversation and the next. When the real work opens, **do not ask again what
-the user already answered**: restate in one line what was decided, and ask only
+the user already answered**. Restate in one line what was decided, and ask only
 for what is new.
 
 ## Before building

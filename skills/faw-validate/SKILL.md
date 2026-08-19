@@ -13,7 +13,7 @@ If you built this, you already decided it is right. Validating it yourself, you
 will look for confirmation rather than refutation. Not out of carelessness, but
 because of how reviewing your own work goes.
 
-A correct row count proves nothing on its own: a dimension can match the expected
+A correct row count proves nothing on its own. A dimension can match the expected
 number of rows exactly and still have less than half of its columns. The count was
 right, and a review that looks only at the count would have passed it.
 

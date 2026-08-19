@@ -18,7 +18,7 @@ That variability is what FAW addresses. It does not promise to save time; it
 reduces the surface where an error passes without anyone reviewing it.
 
 The reason it matters more here than in application development is what a data
-artifact is. In software, a wrong result usually has a test that can express it: a
+artifact is. In software, a wrong result usually has a test that can express it. A
 function is given inputs and its output is compared against what it should be. In
 data work, **the correct result is not verifiable by the code**. No test knows
 whether 2,705 rows is the number that should have come out. That is only known by
@@ -56,7 +56,7 @@ surface. Their force depends entirely on the agent reading and applying them.
 **The gates** are verifiers that check a specific fact and issue a signed receipt.
 The state machine recomputes that receipt before allowing a phase change, so an
 unsatisfied gate stops the work. A data contract that does not match the real table
-is not a warning: it is a phase that does not advance.
+is not a warning. It is a phase that does not advance.
 
 **The hooks** are programs that run before an action and can deny it. They run
 outside the model, so they do not depend on the agent choosing to invoke them. An
@@ -97,7 +97,7 @@ choice of each visual are not verifiable that way, and development is iterative 
 nature. Charging a report the gates of a model would create a gate impossible to
 satisfy honestly, and those should not exist.
 
-`MINOR-CHANGE` has an explicit guardrail: if the change touches schema, business
+`MINOR-CHANGE` has an explicit guardrail. If the change touches schema, business
 logic or the consumption layer, or exceeds roughly thirty lines, it gets
 reclassified to `ARTIFACT`. This is not left to judgment in the moment.
 
@@ -112,7 +112,7 @@ abandoned.
 `faw/transitions.json` defines a directed graph. The nodes are the phases plus an
 idle state; the edges are the allowed moves; each edge can require gates to cross.
 
-That it is a graph and not a list of rules has a practical consequence: from build
+That it is a graph and not a list of rules has a practical consequence. From build
 you can only go to validation, never jump straight to publication. The jump is not
 forbidden by a warning, it does not exist as an edge.
 
@@ -130,7 +130,7 @@ REPORT:
 ```
 
 The tiers are different paths over the same graph, not separate graphs.
-`scripts/state.py` walks it: it checks which node the work is on, whether the
+`scripts/state.py` walks it. It checks which node the work is on, whether the
 requested edge exists for the active tier, and whether its gates are satisfied.
 When any of that fails, it rejects the transition.
 
@@ -155,7 +155,7 @@ Rows and columns get reported, never rows alone. Which official platform tooling
 was used gets stated.
 
 **Validation.** Run by an agent that did not build, instructed to refute rather
-than confirm. If it fails, the work returns to build: it is not patched here,
+than confirm. If it fails, the work returns to build. It is not patched here,
 because the patch would be written by whoever is validating and nobody would be
 left looking from the outside.
 
@@ -167,7 +167,7 @@ environment and check the state after deployment.
 ## 5. The checkpoints
 
 The process stops and waits for the user at exactly three moments, and they are few
-on purpose: a method that asks all the time teaches people to answer yes without
+on purpose. A method that asks all the time teaches people to answer yes without
 reading.
 
 1. **Before profiling**: the tier and the scope are agreed.
@@ -229,13 +229,13 @@ verified only the last.
 ## 7. The project profile
 
 Some infrastructure decisions cannot be known by the method and should not be
-assumed: where the tickets live, whether a development environment exists separate
-from production, whether code gets executed against the platform. Writing those
+assumed, such as where the tickets live, whether a development environment exists
+separate from production, and whether code gets executed against the platform. Writing those
 answers into the method would make it correct for one project and wrong for every
 other.
 
 The profile declares them in **`faw.json`**, at the root of the working repository,
-and **it is versioned**. These are the team's process rules: they have to travel
+and **it is versioned**. These are the team's process rules. They have to travel
 with the repository, be reviewed in a pull request, and be the same for everyone. A
 profile that lives on one machine produces two people working under different rules
 with nothing to detect it.
@@ -257,7 +257,7 @@ one that allows more. With no environments declared, the method assumes there is
 one and that it is production, so every write to the platform requires the reason
 in writing before it runs.
 
-The asymmetry of the error justifies it: a stricter value costs an authorization
+The asymmetry of the error justifies it. A stricter value costs an authorization
 the user was going to give anyway; a looser one writes to production without
 asking.
 
@@ -312,7 +312,7 @@ not reach a repository a third party reads.
 
 ## 9. The change channel
 
-The everyday question is which route each modification takes: a pull request, an
+The everyday question is which route each modification takes. A pull request, an
 interactive execution against the platform, or the product interface. The criterion
 that answers it: **the channel is decided by where the record has to end up.**
 
@@ -325,10 +325,10 @@ that answers it: **the channel is decided by where the record has to end up.**
 | Semantic model, report | Interface or desktop tool | On commit | The commit and its verifier |
 | Anything in production | The declared promotion mechanism | Explicit, always | The deployment history |
 
-Two rules follow. First: every write made by direct execution has to be
+Two rules follow. First. Every write made by direct execution has to be
 **reproducible from a versioned artifact**. If the logic that produced it only
 existed inside a session that is now closed, that is not a change, it is an accident
-nobody can reproduce. Second: git is the source of truth for everything
+nobody can reproduce. Second. Git is the source of truth for everything
 serializable, and the deployed environment is a destination, not a place to edit.
 
 ### What can be blocked, and what cannot
@@ -336,7 +336,7 @@ serializable, and the deployed environment is a destination, not a place to edit
 Writes that go through MCP server tools **are** covered. Those tools are presented
 to hooks like any other, named `mcp__server__tool`, so a hook intercepts them before
 they run. The hook distinguishes reads from writes and, when in doubt, classifies as
-a write: being wrong on the strict side costs an unnecessary authorization; on the
+a write. Being wrong on the strict side costs an unnecessary authorization; on the
 other side it lets a write through unchecked.
 
 This matters more than it sounds, because without it the phases governed the code
@@ -348,7 +348,7 @@ misconfigured client can perform destructive operations, and that the mechanisms
 prevent it are not standardized in the specification. That is the reason for putting
 the safeguard in the orchestrator rather than trusting the server.
 
-**What cannot be blocked**, stated plainly: arbitrary code running inside a Spark
+**What cannot be blocked.** Arbitrary code running inside a Spark
 session, and files written from the shell through redirection or a heredoc. No hook
 can inspect those before they happen. There the method detects and does not prevent,
 and promising otherwise would be lying about a gate.
@@ -357,21 +357,21 @@ and promising otherwise would be lying about a gate.
 
 ## 10. Client surface
 
-Before writing anywhere: who reads this?
+Before writing anywhere, ask who reads it.
 
 FAW does not distinguish own repositories from client repositories. Every governed
 repository is treated as surface a third party reads, and every commit and pull
-request is written accordingly. The distinction is deliberately absent: it is a
+request is written accordingly. The distinction is deliberately absent. It is a
 decision made once, which removes the chance of getting it wrong project by project.
 
-The failure this closes: a remote repository feels like an internal workspace and is
+The failure this closes. A remote repository feels like an internal workspace and is
 not. Design reasoning, open findings and tasks assigned to people end up published
 where the wrong person reads them, with nothing checking.
 
-What never goes: referring to the client in the third person, assigning tasks to
+What never goes. Referring to the client in the third person, assigning tasks to
 their people, unresolved business findings, discarded alternatives with their full
-reasoning, internal methodology, and AI attribution. What does go in a pull request:
-what changed, one line of rationale per non-obvious decision, the validation
+reasoning, internal methodology, and AI attribution. What does go in a pull request
+is what changed, one line of rationale per non-obvious decision, the validation
 numbers, and a deployment note when a manual step is needed.
 
 What is specific to each project, such as names of people or identifiers of other
@@ -392,7 +392,7 @@ ones that depend on reading are the ones that depend on the agent's judgment, an
 that is marked rather than disguised. A principle presented as a guarantee with
 nothing enforcing it would be exactly the failure the method exists to prevent.
 
-The fourteen, one line each: evidence before assertion; validate the schema and not
+The fourteen, one line each. Evidence before assertion; validate the schema and not
 just the count; explicit authorization per turn to write; between failing and
 returning a doubtful number, fail; resolve derived values as far upstream as the
 design allows; statements about the platform need documentation that was read and
@@ -418,22 +418,22 @@ which of them has the user not discussed.** The ones that surface get put on the
 table; the user then decides whether to review them or stay with the default. What
 must not happen is finding out once it is expensive to reverse.
 
-The criterion for which ones to surface: if changing it three months from now would
+The criterion for which ones to surface. If changing it three months from now would
 mean rebuilding something, raise it now; if it is reversible with a commit, it does
 not need the conversation.
 
 That review gets offered even when the user did not ask and does not know the topic,
 because the consequence of getting it wrong gets paid either way. When they have no
-formed opinion, do not choose silently and do not lecture: explain what each option
+formed opinion, do not choose silently and do not lecture. Explain what each option
 implies for that specific case, recommend one with its rationale, and move on.
 
-Where they tend to hide, as orientation rather than a checklist: the storage mode of
+Where they tend to hide, as orientation rather than a checklist. The storage mode of
 the semantic model, the grain of each fact table, where each derived calculation is
 resolved, whether keys are natural or surrogate, where shared dimensions live,
 whether the load is full or incremental, and the naming convention.
 
 The method does not replace the official documentation on any of them, and should
-not: capabilities and limits change between releases, and a recommendation based on
+not. Capabilities and limits change between releases, and a recommendation based on
 what was true six months ago can be wrong today and sound just as confident. What
 the method adds is the obligation to raise the decision and back it with
 documentation that was read and dated.
@@ -451,7 +451,7 @@ with `--context`.
 
 The hook injects that path on every turn while the work is open, so the agent reads
 it **before** asking. The point is that the information does not get lost between one
-conversation and the next: when the real work opens, what the user already answered
+conversation and the next. When the real work opens, what the user already answered
 does not get asked again.
 
 ---
@@ -459,12 +459,12 @@ does not get asked again.
 ## 13. The platform layer
 
 FAW does not teach how to write an Eventstream or which API deploys a semantic
-model, on purpose: that knowledge changes with every release, and maintaining it by
+model, on purpose. That knowledge changes with every release, and maintaining it by
 hand guarantees it ages badly without anyone noticing.
 
 Microsoft maintains that layer in
 [`skills-for-fabric`](https://github.com/microsoft/skills-for-fabric). The two
-layers complement each other because they solve different things: that repository
+layers complement each other because they solve different things. That repository
 describes itself as focused on artifact authoring, with no formal gates and no data
 contracts, which is what FAW adds.
 
@@ -475,10 +475,10 @@ of an assumption, and it stays true however the vendor reorganizes its catalog. 
 is the `tooling` gate, of declaration strength.
 
 Two rules govern the coexistence. FAW governs process and those skills govern
-mechanics: if one says "deploy straight to the workspace" and FAW says "through a
+mechanics. If one says "deploy straight to the workspace" and FAW says "through a
 pull request", FAW wins, because those skills do not know the project's change
 channel. And no write operation they propose is exempt from the approval of the
-turn: the skill says how, the user gives the permission.
+turn. The skill says how, the user gives the permission.
 
 Detail in [`faw/rules/microsoft-skills.md`](faw/rules/microsoft-skills.md).
 
@@ -495,7 +495,7 @@ that are expensive to reverse. They do not enforce anything by themselves.
 **Verifiers** (`scripts/`): each one checks a fact and issues a receipt.
 
 `self_check.py` deserves its own explanation, because it does not verify the
-project: it verifies the verifiers. It builds, in a temporary directory, one case
+project. It verifies the verifiers. It builds, in a temporary directory, one case
 that should pass and one with a known defect that should fail, and confirms each
 behaves as expected. Without it, a regular expression changed by accident or an
 inverted condition would leave a gate approving everything, and it would look
@@ -507,7 +507,7 @@ over writes made through MCP servers.
 
 **The state machine** (`scripts/state.py`): walks the graph, requires the receipts,
 and records every transition in `.faw/state.jsonl`, an append-only log. This is not
-formal auditing: it is so that the answer to "where were we" does not depend on
+formal auditing. It is so that the answer to "where were we" does not depend on
 anyone's memory two weeks later.
 
 ---
@@ -577,13 +577,13 @@ and seeing whether it returns JSON. If it returns nothing, the project has no `.
 or the hook is failing.
 
 **That the hooks actually block.** The test is attempting the forbidden action and
-seeing the denial: asking for a write with no classified work, or creating a pull
+seeing the denial. Asking for a write with no classified work, or creating a pull
 request with a long body.
 
-The failure mode most worth watching: a hook that breaks exits with a non-zero code,
+The failure mode most worth watching. A hook that breaks exits with a non-zero code,
 and that is treated as *non-blocking*. A broken hook looks exactly like a hook that
 approved the action. That is why hooks get tested by running them rather than by
-reading them, and why they all force the encoding of their output: on Windows,
+reading them, and why they all force the encoding of their output. On Windows,
 standard output defaults to cp1252, and one character outside that set is enough for
 the process to end badly.
 
@@ -593,7 +593,7 @@ the process to end badly.
 
 - A promotion criterion between environments. There is none defined, and writing an
   invented one would be worse than the absence.
-- Coverage of runs that write from inside a Spark session: there the method detects
+- Coverage of runs that write from inside a Spark session, where the method detects
   and does not prevent.
 - A tier for pipeline orchestration. Dependencies, watermarks and concurrency are
   their own class of failure, and designing it makes more sense after having real

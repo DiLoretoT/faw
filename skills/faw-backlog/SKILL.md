@@ -20,7 +20,7 @@ file does not exist, the value is `internal`.
 
 **Before reading an external tracker, check whether an MCP server is available for
 it.** With MCP, read and update it directly. Without MCP, do not invent the state
-of the backlog and do not assume a ticket exists: ask the user, or work with the
+of the backlog and do not assume a ticket exists. Ask the user, or work with the
 identifier they give.
 
 A tool with no MCP server does not prevent using FAW. The only thing the method
@@ -42,7 +42,7 @@ needs from a ticket is its identifier.
 
 3. **Propose the next one ordered by technical dependency, not by backlog order.**
    Dimensions before facts, always; a table before the model that consumes it; the
-   model before the report. Blocked work is not proposed: it is reported as
+   model before the report. Blocked work is not proposed. It is reported as
    blocked, with what would unblock it.
 
 4. **Cross-check against the FAW state.** If `state.py status` shows open work, say
@@ -53,7 +53,7 @@ needs from a ticket is its identifier.
    (principle 14). "Shall we start with 1001?" is not enough.
 
 6. **If the backlog is empty**, say so rather than inventing work. That is the
-   moment to offer `/faw-roadmap`: an empty backlog rarely means there is nothing
+   moment to offer `/faw-roadmap`. An empty backlog rarely means there is nothing
    to do, it means nobody has decided what comes next.
 
 ## Mode: where does this fit

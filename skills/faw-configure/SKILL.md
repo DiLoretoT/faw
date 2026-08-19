@@ -40,7 +40,7 @@ identifiers, and git provides the history. Nothing has to be installed and no
 identifiers have to be invented.
 
 Whether an MCP server exists for the chosen tool is a separate matter and does not
-change the answer: with MCP the agent reads and updates the tickets; without MCP
+change the answer. With MCP the agent reads and updates the tickets; without MCP
 the user operates their tool and the method uses the identifier they report.
 Either way FAW works the same.
 
@@ -65,7 +65,7 @@ single-workspace deployment.
 **4. Is code executed against the platform from here?**
 
 If the project uses interactive Spark sessions, declare it. Without that
-declaration the agent does not assume that channel is available: it proposes it
+declaration the agent does not assume that channel is available. It proposes it
 and the user decides.
 
 **5. Is there a control table for runs?**
@@ -83,7 +83,7 @@ there. If not, the record goes to the ticket receipt.
 }
 ```
 
-`faw.json` **is versioned**. These are the team's process rules: they have to
+`faw.json` **is versioned**. These are the team's process rules. They have to
 travel with the repository, be reviewed in a pull request, and be the same for
 everyone. A profile that lives on a single machine produces two people working
 under different rules with nothing to detect it.
@@ -109,5 +109,5 @@ a repository a third party reads.
 
 Show the file that was written and what changes in practice, in two or three
 lines. If the project already had a `faw.json`, state explicitly which values are
-changing before writing it: changing the profile in the middle of open work alters
+changing before writing it. Changing the profile in the middle of open work alters
 the rules that work started under.
