@@ -1,5 +1,5 @@
 ---
-name: faw-backlog
+name: backlog
 description: Answers what to work on next and where a new request fits, against whichever ticket system the project uses or against the FAW internal registry. Use at the start of a working session or when what comes next is unclear.
 ---
 
@@ -9,8 +9,8 @@ Two questions: **what do I work on next?** and **where does this request fit?**
 
 ## Where the tickets come from
 
-Declared by `tickets.system` in `faw.json` at the root of the repository. If the
-file does not exist, the value is `internal`.
+Declared by `tickets.system` in `.faw/config.json`. If the file does not exist,
+the value is `internal`.
 
 | System | Where they are read | How they are operated |
 |---|---|---|
@@ -53,7 +53,7 @@ needs from a ticket is its identifier.
    (principle 14). "Shall we start with 1001?" is not enough.
 
 6. **If the backlog is empty**, say so rather than inventing work. That is the
-   moment to offer `/faw-roadmap`. An empty backlog rarely means there is nothing
+   moment to offer `/faw:roadmap`. An empty backlog rarely means there is nothing
    to do, it means nobody has decided what comes next.
 
 ## Mode: where does this fit

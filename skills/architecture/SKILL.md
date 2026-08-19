@@ -1,5 +1,5 @@
 ---
-name: faw-architecture
+name: architecture
 description: Architecture review of what is being built, contrasting the decisions taken against official documentation, forums and community articles. Use when closing a stage, before replicating a pattern to another domain, or when a decision starts to hurt.
 ---
 

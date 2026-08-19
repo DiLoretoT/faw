@@ -38,19 +38,22 @@ VERIFY_PLATFORM = FAW_ROOT / "scripts" / "verify_platform.py"
 GIT_COMMIT = re.compile(r"\bgit\s+(?:-[A-Za-z-]+(?:=\S+)?\s+)*commit\b")
 
 
-def main() -> int:
-    data = common.payload()
-    if data is None:
-        # The input could not be read: fail OPEN. Blocking every commit because
-        # of a parsing error in the hook would be a worse failure than the one it
-        # is trying to prevent.
-        return 0
+def run(data: dict) -> int:
+    """The gate itself, taking the already-parsed hook payload.
 
+    Split from main() so shell_gate.py can run this and the pull request gate
+    from a single process."""
     command = (data.get("tool_input") or {}).get("command", "") or ""
     if not GIT_COMMIT.search(command):
         return 0  # not a commit, none of our business
 
     repo = Path(data.get("cwd") or ".")
+    if not common.active(repo):
+        # The opt-in the manifest promises. This check was missing from the
+        # start: the gate ran on every commit of every repository, with or
+        # without FAW, which is exactly what installing a global plugin must
+        # not do to projects that did not ask for it.
+        return 0
 
     if not VERIFY_DIFF.exists():
         print(f"[faw] {VERIFY_DIFF} not found. The commit is allowed without the "
@@ -182,6 +185,16 @@ def _check_platform(repo: Path) -> int:
         file=sys.stderr,
     )
     return 2
+
+
+def main() -> int:
+    data = common.payload()
+    if data is None:
+        # The input could not be read: fail OPEN. Blocking every commit because
+        # of a parsing error in the hook would be a worse failure than the one it
+        # is trying to prevent.
+        return 0
+    return run(data)
 
 
 if __name__ == "__main__":

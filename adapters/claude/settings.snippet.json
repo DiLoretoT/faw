@@ -31,11 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python <faw>/faw/hooks/commit_gate.py"
-          },
-          {
-            "type": "command",
-            "command": "python <faw>/faw/hooks/pr_gate.py"
+            "command": "python <faw>/faw/hooks/shell_gate.py"
           }
         ]
       },

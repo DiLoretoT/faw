@@ -27,7 +27,7 @@ Activate it in a project, which is what makes the hooks act:
 mkdir .faw
 ```
 
-Then run `/faw-configure` once, so the method stops assuming what it can ask.
+Then run `/faw:configure` once, so the method stops assuming what it can ask.
 Full steps in [`docs/INSTALL.md`](docs/INSTALL.md).
 
 ## What it does
@@ -62,6 +62,11 @@ You do not need a ticket tracker. If none is declared, FAW keeps the registry in
 the repository and generates the identifiers, with git providing the history. If
 you have one with an MCP server connected, it reads and updates it; if you have one
 without, it works with the identifier you give it.
+
+You do not need to stand in the git repository that backs the workspace either.
+The working folder is any local path. When it is a git repository, the commit and
+pull request gates act there; when it is not, the gates that need git say so and
+step aside.
 
 You do not need a separate development environment either. A single workspace is a
 supported pattern, and there the method tightens the write rules instead of

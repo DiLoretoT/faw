@@ -31,7 +31,7 @@ claude --plugin-dir <clone-path>
 claude plugin validate <clone-path>
 ```
 
-With the plugin installed, the hooks, the `/faw:faw-*` skills and the validator
+With the plugin installed, the hooks, the `/faw:*` skills and the validator
 agent are registered with no further steps.
 
 ## 2. Activate FAW in a project
@@ -48,47 +48,40 @@ classified work is denied; commits pass through the metadata, platform and surfa
 gates; pull requests pass through the client-surface checklist; and writes to the
 platform through MCP servers are subject to the current phase.
 
-`.faw/` goes into the project `.gitignore`. The state, the receipts and the local
-configuration are artifacts of the method, and that configuration can contain names
-that should not be published.
+When the working folder is a git repository, add `.faw/` to its `.gitignore`. The
+state, the receipts and the configuration are artifacts of the method, and the
+configuration can contain names that should not be published. In a folder without
+git there is nothing to ignore.
 
 ## 3. Configure the project
 
 ```
-/faw:faw-configure
+/faw:configure
 ```
 
 It defines where the tickets live, whether there is a development environment
-separate from production, and which execution channels are available. The result is
-written to `faw.json` at the root of the repository, and **it is versioned**. These
-are the team's process rules, not one machine's settings.
+separate from production, and which execution channels are available. The result
+is written to `.faw/config.json`, next to the state and the receipts. One local
+file holds the whole project declaration, including the two lists the surface
+gate reads.
 
 ```json
 {
   "tickets": { "system": "internal" },
   "environments": { "dev": false, "prd": true, "promotion": "manual" },
-  "channel": { "livy": false, "control_table": null }
+  "channel": { "livy": false, "control_table": null },
+  "client_people": [],
+  "internal_literals": []
 }
 ```
 
 Everything is optional. Without this file the method still works, resolving every
-missing value by the strictest option: a single environment, treated as production,
-with authorization in writing before each write.
+missing value by the strictest option: a single environment, treated as
+production, with authorization in writing before each write.
 
-What does **not** go in that file are names of people, identifiers of other
-projects and local paths. Those live in `.faw/config.json`, which is not versioned:
-
-```json
-{
-  "client_people": ["Surname"],
-  "internal_literals": ["internal-repo"],
-  "artifacts_in": "/path/to/internal/documentation"
-}
-```
-
-Both lists feed the surface gate, which stops a commit or pull request that
-contains them. `artifacts_in` is used when the design reasoning should not stay in a
-repository a third party reads.
+The file is local by design and never published, so nothing about FAW appears in
+anything a third party reads. `client_people` and `internal_literals` feed the
+surface gate, which stops a commit or pull request that contains them.
 
 ## 4. The Microsoft platform layer
 

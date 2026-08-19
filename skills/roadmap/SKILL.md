@@ -1,5 +1,5 @@
 ---
-name: faw-roadmap
+name: roadmap
 description: Contrasts what was planned against what actually exists on the platform, and when there is no defined direction, helps build one using the official adoption framework as a reference. Use when reviewing progress, replanning, or when the backlog has run out of things to propose.
 ---
 

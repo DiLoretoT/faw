@@ -1,5 +1,5 @@
 ---
-name: faw-design
+name: design
 description: Runs the DESIGN phase - grain, natural key, data contract, and the architecture decisions that are expensive to reverse. Use before building any artifact or semantic model.
 ---
 

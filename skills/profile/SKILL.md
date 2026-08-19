@@ -1,5 +1,5 @@
 ---
-name: faw-profile
+name: profile
 description: The FAW profiling phase. Measures the source against real data and produces the receipt with the queries behind every number. Use before designing any data artifact.
 ---
 

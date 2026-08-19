@@ -1,5 +1,5 @@
 ---
-name: faw-classify
+name: classify
 description: Starts a piece of work under FAW. Classifies the request, assigns a tier, defines scope and opens the state. Use at the start of any data work on Fabric.
 ---
 
@@ -24,6 +24,7 @@ Phase 1 of FAW. **Do not build anything yet.**
    | `QUESTION` | A question. No branch, no artifacts. |
    | `EXPLORATION` | Understanding something without touching it. Writing to the platform is forbidden. |
    | `MINOR-CHANGE` | A contained adjustment, without touching schema, business logic or the consumption layer. Around 30 lines. |
+   | `OPERATION` | Running an existing artifact without changing it. A backfill, a rerun, an on-demand refresh. |
    | `ARTIFACT` | A table, notebook or pipeline, new or modified. |
    | `MODEL` | Semantic model: tables, relationships, measures, storage mode. |
    | `REPORT` | A Power BI report. **Requires a brief agreed with the user before building** (see below). |

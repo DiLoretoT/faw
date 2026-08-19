@@ -69,6 +69,9 @@ RULE_BY_PHASE = {
               "Closes with the user's approval BEFORE building.",
     "BUILD": "STEP 0: if the artifact has an official platform skill, read it before "
              "writing a line. Validations inside the artifact. Report rows AND columns.",
+    "EXECUTION": "Run only what was scoped. Before each write, state table, operation "
+                 "and expected delta; after it, compare the real delta. A job reporting "
+                 "success with zero rows affected is a failure, not a quiet success.",
     "VALIDATION": "Run by faw-validator, which did not build. It looks to refute, not to "
                   "confirm. If it fails, work returns to BUILD: it is not patched here.",
     "PUBLICATION": "Check the COMPLETE diff. Read rules/client-surface.md before writing the "
@@ -164,8 +167,10 @@ def main() -> int:
             "[FAW] No classified work.",
             "Before the first edit, classification has to be closed: assign a tier, define "
             "what is in and what is NOT, and wait for the user's approval. The skill is "
-            "/faw:faw-classify. The write gate will deny any edit until the classification "
+            "/faw:classify. The write gate will deny any edit until the classification "
             "exists.",
+            f"Register with: python {FAW_ROOT / 'scripts' / 'state.py'} start --tier <TIER> "
+            f"--title \"<title>\"",
             STATE_LINE,
         ]
     else:
@@ -188,6 +193,9 @@ def main() -> int:
         exits = _exits(tier or "", phase)
         if exits:
             lines.append(f"Legal exits: {exits}")
+        # The skills say `python <faw>/scripts/state.py` and nothing resolves
+        # <faw> until a denial prints it. One line closes that gap.
+        lines.append(f"FAW scripts: {FAW_ROOT / 'scripts'}")
         lines.append(STATE_LINE)
 
     print(json.dumps({

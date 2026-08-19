@@ -49,6 +49,7 @@ TEXT_LIMIT = 8
 # no warning: the gate was not bypassed, it simply did not exist there.
 PR_COMMAND = re.compile(r"\bgh\s+pr\s+(create|edit)\b"
                         r"|\baz\s+repos\s+pr\s+(create|update)\b")
+AZ_COMMAND = re.compile(r"\baz\s+repos\s+pr\b")
 
 # This applies to the body of a pull request, not to the files: a notebook may
 # well document how something was validated. That is why it lives here and not
@@ -57,17 +58,49 @@ REDUNDANT_SECTION = re.compile(r"^#+\s*(validation|deployment|testing)",
                                re.IGNORECASE | re.MULTILINE)
 
 
+def _az_description(command: str) -> str | None:
+    """Extract the body from an az command.
+
+    az has no --body. It uses --description or -d, and accepts several
+    space-separated quoted values, each one becoming a line. Checked against the
+    official CLI reference, page dated 2026-08-04. Parsing only --body here left
+    the az coverage announced and not delivered: the command matched, the body
+    came back empty, and the gate warned instead of blocking.
+    """
+    m = re.search(r"(?:--description|\s-d)[=\s]+(.*)", command, re.DOTALL)
+    if not m:
+        return None
+    rest = m.group(1)
+    parts = []
+    rx = re.compile(r"\s*(['\"])((?:(?!\1).)*)\1", re.DOTALL)
+    pos = 0
+    while True:
+        mm = rx.match(rest, pos)
+        if not mm:
+            break
+        parts.append(mm.group(2))
+        pos = mm.end()
+    if parts:
+        return "\n".join(parts)
+    tokens = rest.split()
+    token = tokens[0] if tokens else None
+    return token if token and not token.startswith("-") else None
+
+
 def _body(command: str, repo: Path) -> str | None:
     """Extract the pull request body from the command.
 
-    Covers `--body 'x'`, `--body "x"`, `--body=x`, the heredoc form of
-    `--body-file -`, and `--body-file <path>`.
+    Covers gh (`--body 'x'`, `--body "x"`, `--body=x`, the heredoc form of
+    `--body-file -`, `--body-file <path>`) and az (`--description` / `-d`).
 
     Returning None for `--body-file` would switch the gate off silently: a pull
     request created with a heredoc would never be checked, while the same content
     passed with `--body` would be blocked. The heredoc content IS in the command
     string; it only has to be read.
     """
+    if AZ_COMMAND.search(command):
+        return _az_description(command)
+
     for rx in (
         r"--body\s*=\s*'((?:[^'\\]|\\.)*)'",
         r'--body\s*=\s*"((?:[^"\\]|\\.)*)"',
@@ -117,13 +150,12 @@ def _prose_lines(body: str) -> int:
     return n
 
 
-def main() -> int:
-    common.prepare_output()
+def run(data: dict) -> int:
+    """The gate itself, taking the already-parsed hook payload.
 
-    data = common.payload()
-    if data is None:
-        return 0
-
+    Split from main() so shell_gate.py can run this and the commit gate from a
+    single process. Two separate hooks on the same matcher meant two interpreter
+    launches for every shell command, and the startup cost is what dominates."""
     repo = Path(data.get("cwd") or ".")
     if not common.active(repo):
         return 0
@@ -176,6 +208,14 @@ def main() -> int:
           "reviewer needs it.\nLong reasoning goes in the commit message. Business findings "
           "go to the internal tracker."
     )
+
+
+def main() -> int:
+    common.prepare_output()
+    data = common.payload()
+    if data is None:
+        return 0
+    return run(data)
 
 
 if __name__ == "__main__":

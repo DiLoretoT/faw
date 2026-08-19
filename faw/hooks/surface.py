@@ -47,7 +47,7 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bclaude\b|\bcopilot\b|\banthropic\b|generated with|"
                 r"co-authored-by:\s*claude", re.IGNORECASE),
      "AI attribution, which does not belong in a client repository, without exception"),
-    (re.compile(r"\bFAW\b|faw-classify|faw-design|FAW\s+gates?"),
+    (re.compile(r"\bFAW\b|\bfaw[:-][a-z]+|FAW\s+gates?"),
      "the internal working method does not belong in a client repository"),
     (re.compile(r"\b(the|our|this) client\b", re.IGNORECASE),
      "refers to the client in the third person, inside their own repository"),

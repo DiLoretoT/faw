@@ -22,6 +22,7 @@
   "_note_checkpoints": "user_confirmation marks the 3 points where the agent STOPS and waits: end of CLASSIFICATION, end of DESIGN, end of VALIDATION. Every other transition advances on its own as soon as its gates pass, showing a summary but not waiting for approval. Authorizations to write to the platform (the 'authorization' gate) are a separate gate, asked for every time, and do not count against this budget.",
 
   "no_abandon": ["PUBLICATION"],
+  "_note_no_abandon": "Publication cannot be abandoned: nothing is left to decide there, only steps left to finish. It can be paused, because waiting for a pull request review is part of publishing.",
 
   "common": {
     "IDLE->CLASSIFICATION": { "gates": [] }
@@ -72,6 +73,12 @@
       "BUILD->PUBLICATION":        { "gates": ["assertions"] },
       "PUBLICATION->IDLE":         { "gates": ["metadata", "git-clean"] },
       "CLASSIFICATION->PROFILING": { "gates": [], "_note": "exit used when reclassifying to ARTIFACT" }
+    },
+
+    "OPERATION": {
+      "_note": "Running existing artifacts without changing their definition. A backfill, a rerun of a failed pipeline, an on-demand refresh. The failures it closes are the run that writes the wrong slice with nobody having stated what it would touch, and the run that reports success having written nothing. Changing code or schema reclassifies to ARTIFACT or MINOR-CHANGE; diagnosing something broken goes to INCIDENT.",
+      "CLASSIFICATION->EXECUTION": { "gates": ["user_confirmation"], "_checkpoint": "1 of 1 - scope agreed: what runs, against what, and the expected delta" },
+      "EXECUTION->IDLE":           { "gates": ["assertions", "authorization"] }
     },
 
     "EXPLORATION": {

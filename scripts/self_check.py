@@ -315,11 +315,101 @@ def caso_estado_contrato_multitabla(tmp: Path) -> tuple[int, int]:
     return ok, bad
 
 
+GOOD_BRIEF = """# Report brief: CANARY-B
+
+## Objective
+Enable the finance lead to decide each week which overdue accounts to escalate,
+replacing a manual spreadsheet that is assembled by hand every Monday morning.
+
+## Audience
+The finance lead and the two analysts on the collections team, weekly.
+
+## Questions it answers
+1. Which accounts crossed 90 days overdue this week?
+2. How does the overdue total move month over month?
+3. Which customers concentrate the top ten percent of overdue balance?
+
+## Out of scope
+No forecasting, no write-off proposals, no per-agent performance view.
+
+## Data source
+Semantic model SM_Collections in the finance workspace, tables fact_balance
+and dim_customer.
+
+## Business validation
+The finance lead confirms the totals against the monthly close report.
+"""
+
+# Known defect: the template placeholders survive and the sections are hollow.
+# This is exactly what the gate exists to reject, and what a size check alone
+# would have accepted.
+BAD_BRIEF = """# Report brief: CANARY-B
+
+## Objective
+<What this report exists for. Which decision it enables, or which question it
+closes. If the answer is "to see the data", there is no objective yet.>
+
+## Audience
+<Who will open it, in what role, and how often.>
+
+## Questions it answers
+1. <...?>
+
+## Out of scope
+<What is NOT included.>
+
+## Data source
+<Semantic model, workspace, connection type and tables consumed.>
+"""
+
+
+def caso_brief(tmp: Path) -> tuple[int, int]:
+    good = tmp / "good-brief.md"
+    bad = tmp / "bad-brief.md"
+    _write(good, GOOD_BRIEF)
+    _write(bad, BAD_BRIEF)
+    ok = _run("verify_brief.py", ["--brief", str(good)], tmp)
+    bad_rc = _run("verify_brief.py", ["--brief", str(bad)], tmp)
+    return ok, bad_rc
+
+
+def caso_plataforma(tmp: Path) -> tuple[int, int]:
+    """Both cases run with --offline, so the outcome depends only on precedent
+    in the repository and never on the network."""
+    repo = tmp / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "selfcheck@faw.local")
+    _git(repo, "config", "user.name", "selfcheck")
+
+    real = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/1.0.0/schema.json"
+    fake = "https://developer.microsoft.com/json-schemas/fabric/invented/by/analogy/9.9.9/schema.json"
+
+    # The literal gains precedent by existing in a committed file.
+    _write(repo / "existing.json", '{"$schema": "%s"}' % real)
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base")
+
+    # Should pass: a staged file reusing the literal that HEAD already carries.
+    _write(repo / "new_ok.json", '{"$schema": "%s"}' % real)
+    _git(repo, "add", "new_ok.json")
+    ok = _run("verify_platform.py", ["--offline"], repo)
+
+    # Should fail: a staged literal with no precedent, and no network to save it.
+    _git(repo, "reset", "-q")
+    _write(repo / "new_bad.json", '{"$schema": "%s"}' % fake)
+    _git(repo, "add", "new_bad.json")
+    bad_rc = _run("verify_platform.py", ["--offline"], repo)
+    return ok, bad_rc
+
+
 CASOS = [
     ("verify_contract.py", caso_contrato),
     ("verify_diff.py", caso_diff),
     ("verify_model.py", caso_modelo),
     ("verify_report.py", caso_reporte),
+    ("verify_brief.py", caso_brief),
+    ("verify_platform.py", caso_plataforma),
     ("state.py (contract multi-table)", caso_estado_contrato_multitabla),
 ]
 

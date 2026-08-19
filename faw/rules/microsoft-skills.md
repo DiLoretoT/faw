@@ -27,7 +27,7 @@ claude plugin install powerbi-authoring@fabric-collection
 
 It can also be consumed from a local clone of the repository, which is the route
 for editors that do not support plugins. If a clone is used, declare its path in
-`faw.json` under `channel.microsoft_skills`, and update it regularly. An outdated
+`.faw/config.json` under `channel.microsoft_skills`, and update it regularly. An outdated
 platform skill is worse than no skill, because it states with confidence
 something that stopped being true.
 

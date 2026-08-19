@@ -85,6 +85,7 @@ adjustment does not cost the same as a new semantic model.
 | **QUESTION** | A question that touches nothing | Does not enter the graph |
 | **EXPLORATION** | Understanding something without modifying it | Classification, profiling, a document |
 | **MINOR-CHANGE** | A contained adjustment | Classification, build, publication |
+| **OPERATION** | Running what already exists | Classification, execution |
 | **ARTIFACT** | A table, notebook or pipeline | The six phases |
 | **MODEL** | A semantic model | The six, verified through its definition |
 | **REPORT** | A report | Agreed brief, build, publication |
@@ -101,9 +102,18 @@ satisfy honestly, and those should not exist.
 logic or the consumption layer, or exceeds roughly thirty lines, it gets
 reclassified to `ARTIFACT`. This is not left to judgment in the moment.
 
+`OPERATION` covers running existing artifacts without changing their definition. A
+backfill, a rerun of a failed pipeline, an on-demand refresh. None of that is
+building, and forcing it through six phases would push people to skip the method
+exactly when they touch production data. It pays one checkpoint, where what runs,
+against what, and the expected delta get agreed, and it closes by comparing the
+real delta against the expected one. Changing code or schema reclassifies;
+diagnosing something broken is an `INCIDENT`.
+
 `QUESTION` does not enter the state machine. It opens no ticket and touches no
 state file. Putting it inside would be the kind of ceremony that makes a method get
-abandoned.
+abandoned. The graph still defines a QUESTION route as an escape hatch: if one is
+opened anyway, it closes straight back to idle.
 
 ---
 
@@ -127,6 +137,9 @@ MINOR-CHANGE:
 
 REPORT:
   CLASSIFICATION ──brief──► BUILD ─────────────────► PUBLICATION → IDLE
+
+OPERATION:
+  CLASSIFICATION ──scope──► EXECUTION ──delta──► IDLE
 ```
 
 The tiers are different paths over the same graph, not separate graphs.
@@ -154,6 +167,10 @@ separate script, so they run on every future execution and not only the first ti
 Rows and columns get reported, never rows alone. Which official platform tooling
 was used gets stated.
 
+**Execution.** Only in the operation tier. Runs what was scoped, with the write
+authorization asked at the moment of writing, and closes by comparing the real
+delta against the expected one.
+
 **Validation.** Run by an agent that did not build, instructed to refute rather
 than confirm. If it fails, the work returns to build. It is not patched here,
 because the patch would be written by whoever is validating and nobody would be
@@ -174,6 +191,9 @@ reading.
 2. **Before building**: the grain, the key and the architecture decisions are
    agreed. This is where a wrong decision costs the least.
 3. **Before publishing**: the verdict is agreed.
+
+The shorter tiers keep fewer stops. An operation has a single one, before
+anything runs.
 
 They are stated by what comes next rather than by what just finished, because what
 the user is approving is what happens after they say yes.
@@ -226,25 +246,36 @@ verified only the last.
 
 ---
 
-## 7. The project profile
+## 7. Where Claude stands, and the project profile
 
-Some infrastructure decisions cannot be known by the method and should not be
-assumed, such as where the tickets live, whether a development environment exists
-separate from production, and whether code gets executed against the platform. Writing those
-answers into the method would make it correct for one project and wrong for every
-other.
+Work on a data platform happens in three different places, and telling them apart
+is what makes the rest of this section simple.
 
-The profile declares them in **`faw.json`**, at the root of the working repository,
-and **it is versioned**. These are the team's process rules. They have to travel
-with the repository, be reviewed in a pull request, and be the same for everyone. A
-profile that lives on one machine produces two people working under different rules
-with nothing to detect it.
+The **tenant** is where the artifacts run. The **repository that backs the
+workspace**, when git integration is on, is often synced on the service side
+without anyone cloning it. And the **working folder** is wherever Claude Code is
+standing. A local path on the engineer's machine, git or not, and usually not the
+backing repository.
+
+**You do not need to stand in the repository that backs the workspace.** The
+working folder is any local path. When it happens to be a git repository, the
+commit and pull request gates act on it; when it is not, the gates that need git
+say so and step aside instead of failing.
+
+The profile describes what FAW cannot know about the project and should not
+assume. Where the tickets live, whether a development environment exists separate
+from production, whether code gets executed against the platform. It lives in
+`.faw/config.json`, in the working folder, next to the state and the receipts.
+Local by design, so nothing about FAW has to appear in anything a third party
+reads.
 
 ```json
 {
   "tickets": { "system": "internal" },
   "environments": { "dev": false, "prd": true, "promotion": "manual" },
-  "channel": { "livy": false, "control_table": null }
+  "channel": { "livy": false, "control_table": null },
+  "client_people": [],
+  "internal_literals": []
 }
 ```
 
@@ -252,32 +283,28 @@ Everything is optional. What matters is how the missing values get resolved.
 
 ### The defaults are the strict ones
 
-A missing value is resolved by the option that asks for more control, never by the
-one that allows more. With no environments declared, the method assumes there is
-one and that it is production, so every write to the platform requires the reason
-in writing before it runs.
+A missing value is resolved by the option that asks for more control, never by
+the one that allows more. With no environments declared, the method assumes there
+is one and that it is production, so every write to the platform requires the
+reason in writing before it runs.
 
 The asymmetry of the error justifies it. A stricter value costs an authorization
 the user was going to give anyway; a looser one writes to production without
 asking.
 
-That default is not pessimism. Microsoft documents deployment on a single workspace
-as a valid, supported pattern for smaller organizations, and in that pattern
-deployment pipelines do not exist because they need several workspaces. A project
-without a separate development environment is a normal case.
+That default is not pessimism. Microsoft documents deployment on a single
+workspace as a valid, supported pattern for smaller organizations, and in that
+pattern deployment pipelines do not exist because they need several workspaces. A
+project without a separate development environment is a normal case.
 
 ### Every key has a consequence
 
 A key that only produced different wording would not be in the file.
 `environments.dev` decides whether the authorization to write is spoken or has to
-be written down before running. `tickets.system` decides where the work identifier
-comes from and whether there is an external backlog to read.
-
-### What does not go here
-
-Names of people, identifiers of other projects and local paths go in
-`.faw/config.json`, which is not versioned. That separation exists so nobody has to
-choose between publishing names and hiding rules.
+be written down before running. `tickets.system` decides where the work
+identifier comes from and whether there is an external backlog to read. The same
+file carries `client_people` and `internal_literals`, the two lists the surface
+gate reads.
 
 ---
 
@@ -300,8 +327,7 @@ assume a ticket exists.
 
 **The project uses no tracker.** FAW keeps the registry in `docs/faw/tickets/`,
 generates sequential identifiers and creates the ticket file when the work opens.
-Git provides the history, which is exactly what an external tracker offers and a
-loose file does not.
+When the folder is under git, the file history shows how each scope changed; without git, the log section inside each ticket carries the trail.
 
 Tickets in the internal registry are versioned and **pass through the surface
 gate**, unlike the rest of the method's artifacts. A ticket contains open questions
@@ -324,6 +350,10 @@ that answers it: **the channel is decided by where the record has to end up.**
 | Pipeline canvas, permissions, shortcuts | Product interface | On commit | The commit of the environment |
 | Semantic model, report | Interface or desktop tool | On commit | The commit and its verifier |
 | Anything in production | The declared promotion mechanism | Explicit, always | The deployment history |
+
+None of this table requires the backing repository to be the working folder. The
+pull request can be created from anywhere with the CLI, and the workspace sync is
+the platform's own mechanism.
 
 Two rules follow. First. Every write made by direct execution has to be
 **reproducible from a versioned artifact**. If the logic that produced it only
@@ -486,10 +516,10 @@ Detail in [`faw/rules/microsoft-skills.md`](faw/rules/microsoft-skills.md).
 
 ## 14. The instruments
 
-**Skills** (`skills/faw-*`): instructions loaded when a phase or a task starts.
-`faw-configure` defines the project profile. `faw-classify`, `faw-profile`,
-`faw-design` and `faw-validate` run phases. `faw-backlog` and `faw-roadmap` answer
-what comes next and where things are going. `faw-architecture` audits the decisions
+**Skills** (`skills/`): instructions loaded when a phase or a task starts.
+`configure` defines the project profile. `classify`, `profile`, `design` and
+`validate` run phases. `backlog` and `roadmap` answer what comes next and where
+things are going. `architecture` audits the decisions
 that are expensive to reverse. They do not enforce anything by themselves.
 
 **Verifiers** (`scripts/`): each one checks a fact and issues a receipt.
@@ -536,7 +566,9 @@ python <faw>/scripts/verify_contract.py contracts/gold.fact_movement.yml --synta
 
 # BUILD: with the official platform tooling checked before writing.
 python <faw>/scripts/state.py move --to BUILD \
-    --gate contract="ok" --gate user_confirmation="approved design and contract"
+    --gate user_confirmation="approved design and contract"
+# The contract gate is satisfied by the receipt verify_contract.py issued above.
+# A --gate declaration cannot satisfy it; machine gates only accept receipts.
 # If the ticket covers several tables, declare the scope:
 #   --gate tables=gold.fact_movement,gold.dim_account
 
@@ -548,7 +580,9 @@ python <faw>/scripts/state.py move --to VALIDATION \
 
 # PUBLICATION: the hooks check the commit and the pull request before they exist.
 python <faw>/scripts/state.py move --to PUBLICATION \
-    --gate schema="ok" --gate user_confirmation="approved the validator verdict"
+    --gate user_confirmation="approved the validator verdict"
+# The schema gate is satisfied by the receipt from the validator run of
+# verify_contract.py. A --gate declaration cannot satisfy it.
 
 # CLOSING: requires that no uncommitted changes remain.
 python <faw>/scripts/state.py move --to IDLE
@@ -615,5 +649,5 @@ creating `.faw/` at its root; without that directory every hook exits doing noth
 so installing the plugin does not impose the method on projects that did not ask for
 it.
 
-Then run `/faw-configure` once, so the method stops assuming what it can ask.
+Then run `/faw:configure` once, so the method stops assuming what it can ask.
 Detail in [`docs/INSTALL.md`](docs/INSTALL.md).

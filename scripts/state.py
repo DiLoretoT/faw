@@ -67,6 +67,15 @@ def _commit() -> str | None:
         return None
 
 
+def _is_git_repo() -> bool:
+    try:
+        out = subprocess.run(["git", "rev-parse", "--git-dir"],
+                             capture_output=True, text=True)
+        return out.returncode == 0
+    except FileNotFoundError:
+        return False
+
+
 def _git_clean() -> bool:
     try:
         out = subprocess.run(["git", "status", "--porcelain"],
@@ -184,8 +193,16 @@ def verify_gates(names: list[str], rules: dict, declared: dict[str, str],
 
         if strength == "machine":
             if name == "git-clean":
-                if not _git_clean():
+                if not _is_git_repo():
+                    print("  note: git-clean passes vacuously, the working folder is "
+                          "not a git repository and there is nothing to leave "
+                          "uncommitted")
+                elif not _git_clean():
                     failures.append("git-clean: there are uncommitted changes")
+                continue
+            if name == "metadata" and not _is_git_repo():
+                print("  note: metadata passes vacuously, the working folder is not a "
+                      "git repository and holds no serialized artifacts to protect")
                 continue
             if name in PER_TABLE_GATES:
                 _verify_per_table(name, d, declared, failures)
@@ -256,7 +273,7 @@ def cmd_start(a) -> int:
         ticket = tickets_mod.new_identifier(ROOT)
     else:
         print(f"--ticket is missing. This project declares '{system}' as its ticket system "
-              f"in {project_mod.PROFILE_FILE}, so the identifier comes from there.\n"
+              f"in {project_mod.CONFIG_FILE}, so the identifier comes from there.\n"
               f"If the work has no ticket in {system}, create it first: work with no "
               f"external record is invisible to the rest of the team.", file=sys.stderr)
         return 1
@@ -368,10 +385,10 @@ def _exit_work(a, event: str) -> int:
         print("No work is open.", file=sys.stderr)
         return 1
     rules = load_rules()
-    if work["phase"] in rules.get("no_abandon", []):
-        print(f"You cannot leave {work['phase']} with '{event}': nothing is left to decide "
-              f"here, only steps left to finish. Close with `move --to IDLE`.",
-              file=sys.stderr)
+    if event == "abandon" and work["phase"] in rules.get("no_abandon", []):
+        print(f"{work['phase']} cannot be abandoned. Nothing is left to decide here, "
+              f"only steps left to finish. Close with `move --to IDLE`, or pause if "
+              f"you are waiting on something.", file=sys.stderr)
         return 1
     append_entry({"ts": _now(), "event": event, "ticket": work["ticket"],
                   "tier": work["tier"], "title": work.get("title"),

@@ -1,0 +1,33 @@
+# The repository's own gate, outside any model. Every verifier proves on every
+# push that it still catches what it claims to catch. A contribution that breaks
+# a gate cannot merge looking green.
+name: self-check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  self-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the one dependency
+        run: pip install pyyaml
+
+      - name: Everything compiles
+        run: python -m py_compile scripts/*.py faw/*.py faw/hooks/*.py
+
+      - name: Manifests parse
+        run: |
+          python -c "import json; [json.load(open(f)) for f in ['faw/transitions.json', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', 'adapters/claude/plugin-hooks.json', 'adapters/claude/settings.snippet.json']]"
+          python -c "import yaml; [yaml.safe_load(open(f)) for f in ['faw/contracts/TEMPLATE.contract.yml', 'faw/contracts/TEMPLATE.model.yml']]"
+
+      - name: The verifiers still catch what they claim to
+        run: python scripts/self_check.py

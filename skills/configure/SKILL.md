@@ -1,6 +1,6 @@
 ---
-name: faw-configure
-description: Defines the project profile - ticket system, environments, available channels - and writes it to faw.json. Use the first time FAW is activated in a repository, or when that infrastructure changes.
+name: configure
+description: Defines the project profile - ticket system, environments, available channels - and writes it to .faw/config.json. Use the first time FAW is activated in a working folder, or when that infrastructure changes.
 ---
 
 # Configure the project
@@ -14,8 +14,8 @@ as a default -- being wrong on the strict side costs one extra authorization,
 being wrong on the other side writes to production without asking -- but it can be
 more ceremony than the project needs.
 
-This skill asks the questions once and writes `faw.json` at the root of the
-repository.
+This skill asks the questions once and writes `.faw/config.json` in the
+working folder.
 
 ## Look before asking
 
@@ -79,35 +79,25 @@ there. If not, the record goes to the ticket receipt.
 {
   "tickets": { "system": "internal" },
   "environments": { "dev": false, "prd": true, "promotion": "manual" },
-  "channel": { "livy": false, "control_table": null }
+  "channel": { "livy": false, "control_table": null },
+  "client_people": [],
+  "internal_literals": []
 }
 ```
 
-`faw.json` **is versioned**. These are the team's process rules. They have to
-travel with the repository, be reviewed in a pull request, and be the same for
-everyone. A profile that lives on a single machine produces two people working
-under different rules with nothing to detect it.
+Everything goes in `.faw/config.json`, next to the state and the receipts. Local
+by design: the working folder is a path on this machine, and nothing about FAW
+has to appear in anything a third party reads. If a team wants to share a
+profile, they share the file the same way they share any other setting.
 
-## What does not go in that file
-
-Names of people, identifiers of other projects, and local paths go in
-`.faw/config.json`, which is not versioned:
-
-```json
-{
-  "client_people": ["Surname"],
-  "internal_literals": ["internal-repo"],
-  "artifacts_in": "/path/to/internal/documentation"
-}
-```
-
-The two lists feed the surface gate, which stops a commit or a pull request that
-contains them. `artifacts_in` is used when the design reasoning should not stay in
-a repository a third party reads.
+The last two keys feed the surface gate. `client_people` holds names that must
+not appear in files or pull requests; `internal_literals` holds names of other
+projects, repositories or in-house methodology that must not leak. Both empty by
+default.
 
 ## When finishing
 
 Show the file that was written and what changes in practice, in two or three
-lines. If the project already had a `faw.json`, state explicitly which values are
+lines. If the project already had a `.faw/config.json`, state explicitly which values are
 changing before writing it. Changing the profile in the middle of open work alters
 the rules that work started under.

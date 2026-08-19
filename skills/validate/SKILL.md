@@ -1,5 +1,5 @@
 ---
-name: faw-validate
+name: validate
 description: The FAW validation phase. Launches the faw-validator agent so that an agent which did NOT build the artifact checks it against its contract and against what was measured.
 ---
 
@@ -65,9 +65,12 @@ and then nobody is left looking from the outside.
 ## If it passes
 
 ```bash
+# The schema gate is satisfied by the receipt your verify_contract.py run issued.
+# A --gate declaration cannot satisfy a machine gate.
 python <faw>/scripts/state.py move --to PUBLICATION \
-    --gate schema="ok: 20 columns, matching the contract"
+    --gate user_confirmation="the user approved the verdict"
 ```
 
-For the `MODEL` tier, also `--gate model="ok: ..."` and `--gate
-reconciliation="..."`.
+For the `MODEL` tier, the `model` gate is satisfied by the receipt from
+`verify_model.py`, and `--gate reconciliation="..."` is declared with who
+confirms the number.

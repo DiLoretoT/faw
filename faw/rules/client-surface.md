@@ -13,7 +13,7 @@ once, which removes the chance of getting it wrong repository by repository.
 | Surface | Who reads it | What can go there |
 |---|---|---|
 | Chat with the user | Only the user | Everything |
-| `docs/faw/` in the working repository | Whoever reads the repository | Method artifacts (the gate does not inspect them); if the reader should not see them, point them elsewhere with `artifacts_in` |
+| `docs/faw/` in the working folder | Nobody, while the folder is local; whoever reads the repository, when it is shared | Method artifacts; the gate inspects only the tickets |
 | Internal project tracker | The internal team | Everything: findings, questions, reasoning |
 | **The working repository** | **The recipient of the repository** | Only what changed and how it was validated |
 | Pull requests, commits, issues | **The recipient** | The same |
@@ -53,8 +53,8 @@ Nothing else. If the body runs past one screen, something in it does not belong.
 | Content | Destination |
 |---|---|
 | Data findings, questions for the business | The project's internal tracker |
-| Complete design reasoning, alternatives | `docs/faw/<ticket>/design.md`, which the gate exempts, or outside the repository via `artifacts_in` if the reader should not see it |
-| Data contracts, profiling receipts | The same. Path in `.faw/config.json` under `artifacts_in` |
+| Complete design reasoning, alternatives | `docs/faw/<ticket>/design.md` in the working folder |
+| Data contracts, profiling receipts | The same |
 | Durable architecture decisions | The project's internal technical documentation |
 | Learnings that carry to other projects | A knowledge base |
 
@@ -63,6 +63,10 @@ Nothing else. If the body runs past one screen, something in it does not belong.
 > execution, the text of a report visual: the recipient reads all of it the same
 > way they read a pull request. The `surface` gate checks it over the diff before
 > every commit, with `docs/faw/` and `.faw/` as the only exempt paths.
+
+If the working folder is a shared repository and internal artifacts must not
+appear in it, run FAW from a separate local folder. The method does not need to
+stand in the repository it publishes to.
 
 ## What each project declares
 

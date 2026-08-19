@@ -25,15 +25,12 @@
         ]
       },
       {
+        "_comment": "shell_gate runs the commit gate and the pull request gate from one process. Registering them separately meant two interpreter launches for every shell command, and the launch cost is what dominates.",
         "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/commit_gate.py\""
-          },
-          {
-            "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/pr_gate.py\""
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/faw/hooks/shell_gate.py\""
           }
         ]
       },

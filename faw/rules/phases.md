@@ -23,7 +23,7 @@ Produced: the classification, in the conversation. No document, except the ticke
 when the project uses the internal registry.
 
 **Where the work identifier comes from.** Declared by `tickets.system` in
-`faw.json`. With an external tracker the identifier comes from there and is passed
+`.faw/config.json`. With an external tracker the identifier comes from there and is passed
 with `--ticket`; with the internal registry FAW generates it and creates the
 ticket file under `docs/faw/tickets/`. Whether the external tracker has an MCP
 server connected changes who operates it, not the method. With MCP the agent
@@ -117,7 +117,7 @@ What happens:
    does not know the topic**, because the consequence of getting them wrong gets
    paid either way, and a default nobody chose is a decision the tool made. Every
    definitive statement about the platform is backed by documentation that was
-   read, with its date. Detail in the `faw-design` skill.
+   read, with its date. Detail in the `design` skill.
 6. **Risks.** What can go wrong and how it will be detected. This is not
    ceremony. Each risk becomes an assertion or a diagnostic metric in the
    artifact.
@@ -126,36 +126,23 @@ What happens:
 
 Produced. The contract and `<artifact root>/faw/<ticket>/design.md`.
 
-### The artifact root is the user's decision
+### Where the artifacts live
 
 Contracts, profiling receipts and design documents contain long reasoning,
-discarded alternatives, open findings and business questions. By default they live
-in the working repository, under `contracts/` and `docs/faw/<ticket>/`, and the
-`surface` gate does not inspect those paths. They are artifacts of the method
-itself.
+discarded alternatives, open findings and business questions. They live in the
+working folder, under `contracts/` and `docs/faw/<ticket>/`, and the `surface`
+gate does not inspect those paths. They are artifacts of the method itself, with
+one exception: the tickets, which it does inspect.
 
-That is only correct if whoever reads the repository can read that reasoning. When
-they cannot -- the repository lives in a client's organization, or a third party
-reads it who should not see internal work -- the root is declared outside the
-repository in `.faw/config.json`, which is not versioned:
+The working folder is usually a local path nobody else reads, so none of this is
+published. When the working folder is a shared repository, the surface gate
+reviews every commit; and if internal artifacts must not appear in that
+repository at all, run FAW from a separate local folder. The method does not need
+to stand in the repository it publishes to.
 
-```json
-{
-  "artifacts_in": "/path/to/internal/documentation/FAW",
-  "client_people": ["Surname"],
-  "internal_literals": ["internal-repo", "OtherClient"]
-}
-```
-
-FAW does not infer whose repository this is. It treats them all the same, as
-surface a third party reads (see [`client-surface.md`](client-surface.md)), and
-the user declares what must not leak. `client_people` and `internal_literals` feed
-the `surface` gate, which stops the commit or the pull request that names a person
-or a declared internal literal. Both lists are empty by default.
-
-Leaving the artifacts in the repository without thinking about it publishes
-internal work where the reader of the repository sees it. That is why the path is
-declared explicitly when that reader should not.
+What each project declares lives in `.faw/config.json`: `client_people` and
+`internal_literals`, the two lists the surface gate stops on sight, both empty by
+default.
 
 **Closing, checkpoint 2 of 3:** the contract exists, is syntactically valid,
 declares grain, key and columns, **and the user confirms the design before
@@ -229,21 +216,61 @@ Produced: `docs/faw/<ticket>/validation.md` with a verdict of **PASS** or **FAIL
 **Goal:** get what was built to its destination without taking anything down on
 the way.
 
-What happens:
-1. **Check the complete diff** with `scripts/verify_diff.py`. It fails if
-   protected metadata is touched without declaring it.
+What publication looks like depends on where the record has to end up, and the
+working folder does not have to be the repository that backs the workspace.
+
+**When the change travels through git** — the working folder is the backing
+repository, or a clone of it:
+1. Check the complete diff with `scripts/verify_diff.py`. It fails if protected
+   metadata is touched without being declared.
 2. Commit and push on the branch.
 3. Pull request, following [`client-surface.md`](client-surface.md).
-4. Merge.
-5. **Sync the workspace** and check the state after deployment: do the artifacts
-   keep their default lakehouse? Is there a phantom diff? If there is one and it
-   is only formatting, commit it and close the cycle.
-6. Update the project tracker with the exact resume point.
+4. Merge, and sync the workspace.
 
-**Closing, the `git-clean` and `metadata` gates.**
+**When it does not** — the work reached the workspace through authorized writes,
+and the backing repository, if any, syncs on the service side:
+1. Verify the deployed state against what was declared, with the verifier that
+   applies.
+2. Confirm the record of what ran exists, in the ticket receipt and in the
+   control table when one is declared.
 
-> Publication cannot be left by abandoning. Nothing is left to decide here, only
-> steps left to finish: leaving is closing, and it owes its gates.
+In both cases, close by checking the post-deployment state. Do the artifacts keep
+their default lakehouse? Is there a phantom diff? If there is one and it is only
+formatting, commit it and close the cycle. Then update the tracker with the exact
+resume point.
+
+**Closing, the `git-clean` and `metadata` gates.** In a working folder that is
+not a git repository, both pass and say so: there is nothing to leave
+uncommitted and no serialized artifacts to protect.
+
+> Publication cannot be abandoned: nothing is left to decide here, only steps
+> left to finish. It can be paused, because waiting for a pull request review is
+> part of publishing.
+
+---
+
+## EXECUTION (operation tier only)
+
+**Goal:** run what already exists, with the scope agreed first and the outcome
+compared after.
+
+An operation is a backfill, a rerun of a failed pipeline, an on-demand refresh.
+Nothing about the artifact's definition changes. The failure modes this phase
+closes are the run that writes the wrong slice with nobody having stated what it
+would touch, and the run that reports success having written nothing.
+
+What happens:
+1. Before each write, state the table or artifact, the operation, and the
+   expected delta. Authorization follows the project rule, spoken or in writing.
+2. Run it.
+3. Compare the real delta against the expected one. A job reporting success with
+   zero rows affected is a failure, not a quiet success (principle 10).
+4. Record what ran in the ticket receipt, and in the control table when one is
+   declared.
+
+**Closing, the `assertions` and `authorization` gates.** If the run exposes that
+something is broken, reclassify to `INCIDENT`; if it exposes that the artifact
+needs changing, that is new work under its own tier.
 
 ---
 
