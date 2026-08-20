@@ -41,6 +41,7 @@ in the gate and not in the verifier.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -48,6 +49,7 @@ import tempfile
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
+ROOT = SCRIPTS_DIR.parent
 PY = sys.executable
 
 
@@ -448,9 +450,91 @@ def caso_raiz_gobernada(tmp: Path) -> tuple[int, int]:
     quiet = _hook("inject_context.py", {"cwd": str(outside), "prompt": "x"})
     bad_rc = 1 if quiet == "" else 0
     return ok, bad_rc
+# A tool name is CamelCase, or an MCP name, optionally with a trailing glob.
+# Checking the shape rather than a list of known names is deliberate: the set of
+# available tools changes with every MCP server connected, and a hardcoded list
+# would age into false failures.
+RE_TOOL_NAME = re.compile(r"^(?:[A-Z][A-Za-z0-9]*|mcp__[\w.*-]+(?:__[\w.*-]+)?)$")
+
+VALID_AGENT = """---
+name: canary-validator
+description: A synthetic agent used by the self-check.
+disallowedTools: Edit, NotebookEdit
+model: opus
+---
+
+Body.
+"""
+
+# Known defect: `tools` holds prose instead of a list. Claude Code splits it on
+# whitespace, resolves neither token to a real tool, and refuses to launch the
+# agent. Nothing catches this until someone invokes it, which is how the
+# validator shipped unusable and the VALIDATION phase became unreachable.
+BROKEN_AGENT = """---
+name: canary-broken
+description: A synthetic agent with prose where a tool list belongs.
+tools: All tools
+model: opus
+---
+
+Body.
+"""
+
+
+def _agent_frontmatter_errors(path: Path) -> list[str]:
+    """Errors in the frontmatter of one distributed agent. Empty means valid."""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if not text.startswith("---"):
+        return [f"{path.name}: no frontmatter"]
+    end = text.find("\n---", 3)
+    if end == -1:
+        return [f"{path.name}: unterminated frontmatter"]
+
+    fields: dict[str, str] = {}
+    for line in text[3:end].splitlines():
+        if ":" in line and not line.startswith((" ", "\t", "#")):
+            k, v = line.split(":", 1)
+            fields[k.strip()] = v.strip()
+
+    errors = []
+    for required in ("name", "description"):
+        if not fields.get(required):
+            errors.append(f"{path.name}: '{required}' is missing")
+
+    for field in ("tools", "disallowedTools"):
+        raw = fields.get(field)
+        if raw is None:
+            continue
+        if not raw:
+            errors.append(f"{path.name}: '{field}' is present and empty")
+            continue
+        for token in (t.strip() for t in raw.replace(",", " ").split()):
+            if not RE_TOOL_NAME.match(token):
+                errors.append(f"{path.name}: '{field}' contains '{token}', which is not "
+                              f"a tool name. The field takes a list, not prose")
+    return errors
+
+
+def caso_agentes(tmp: Path) -> tuple[int, int]:
+    """The distributed agents must have a frontmatter Claude Code can resolve.
+
+    A broken one fails only at the moment of launching the agent, with nothing
+    else detecting it. The should-pass case runs against the real agents/ of the
+    repository, so this also guards what actually ships.
+    """
+    real = ROOT / "agents"
+    ok = 1 if any(_agent_frontmatter_errors(f) for f in sorted(real.glob("*.md"))) else 0
+
+    fake = tmp / "agents"
+    fake.mkdir(parents=True, exist_ok=True)
+    _write(fake / "valid.md", VALID_AGENT)
+    _write(fake / "broken.md", BROKEN_AGENT)
+    bad = 1 if any(_agent_frontmatter_errors(f) for f in sorted(fake.glob("*.md"))) else 0
+    return ok, bad
 
 
 CASOS = [
+    ("agents frontmatter", caso_agentes),
     ("verify_contract.py", caso_contrato),
     ("verify_diff.py", caso_diff),
     ("verify_model.py", caso_modelo),

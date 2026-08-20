@@ -1,5 +1,24 @@
 # Changelog
 
+## 4.0.1 - 2026-08-20
+
+### Fixed
+
+- The validator agent shipped with `tools: All tools` in its frontmatter. That
+  field takes a list, so Claude Code split the prose into `All` and `tools`,
+  resolved neither to a real tool, and refused to launch the agent. The
+  VALIDATION phase was unreachable through its own agent from 3.0.0 until now.
+  The line is gone: with no `tools` field the agent inherits every tool, and
+  `disallowedTools: Edit, NotebookEdit` still keeps it from editing what it
+  judges, which is the guard that matters. Reported as issue #2.
+
+### Added
+
+- A self-check case that parses the frontmatter of every distributed agent and
+  fails when a tool field holds something that is not a tool name. A broken
+  frontmatter used to surface only at the moment of launching the agent, with
+  nothing else detecting it.
+
 ## 4.0.0 - 2026-08-19
 
 The working folder becomes the primary model. FAW no longer assumes Claude is

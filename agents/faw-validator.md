@@ -1,7 +1,6 @@
 ---
 name: faw-validator
 description: Validates a data artifact against its contract and against what was measured. Invoked in the VALIDATION phase of FAW. It does NOT build and does NOT fix; it only issues a verdict. Always run it in an agent other than the one that built the artifact.
-tools: All tools
 disallowedTools: Edit, NotebookEdit
 model: opus
 ---
