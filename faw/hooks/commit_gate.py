@@ -47,8 +47,8 @@ def run(data: dict) -> int:
     if not GIT_COMMIT.search(command):
         return 0  # not a commit, none of our business
 
-    repo = Path(data.get("cwd") or ".")
-    if not common.active(repo):
+    repo = common.root(data)
+    if repo is None:
         # The opt-in the manifest promises. This check was missing from the
         # start: the gate ran on every commit of every repository, with or
         # without FAW, which is exactly what installing a global plugin must

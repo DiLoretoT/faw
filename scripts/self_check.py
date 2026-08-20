@@ -70,6 +70,23 @@ def _git(cwd: Path, *args: str) -> None:
                    text=True, check=True)
 
 
+HOOKS_DIR = SCRIPTS_DIR.parent / "faw" / "hooks"
+
+
+def _hook(name: str, payload: dict) -> str:
+    """Run a hook the way Claude Code does, with the payload on stdin.
+
+    Hooks answer on stdout and always exit 0, so what is asserted here is the
+    content of the answer and not the exit code.
+    """
+    r = subprocess.run(
+        [PY, str(HOOKS_DIR / name)],
+        input=json.dumps(payload), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    return r.stdout.strip()
+
+
 # ── Fixtures ──────────────────────────────────────────────────────────────
 
 CONTRATO_YML = """\
@@ -403,6 +420,36 @@ def caso_plataforma(tmp: Path) -> tuple[int, int]:
     return ok, bad_rc
 
 
+def caso_raiz_gobernada(tmp: Path) -> tuple[int, int]:
+    """The governed folder is found from a subdirectory, and only from inside it.
+
+    This is the case that motivated `project.root()`. Before it, governance
+    depended on `.faw/` being a direct child of the reported directory: a session
+    standing one level down was ungoverned, and the hook said nothing about it —
+    exit 0 with no output, indistinguishable from a hook that evaluated and
+    allowed. That is the failure mode principle 4 forbids, so it gets a case.
+    """
+    folder = tmp / "working-folder"
+    deep = folder / "docs" / "faw" / "T-001"
+    deep.mkdir(parents=True)
+    _write(folder / ".faw" / "state.jsonl", json.dumps({
+        "ticket": "T-001", "tier": "MINOR-CHANGE", "phase": "BUILD",
+        "title": "case", "ts": "2026-01-01T00:00:00+00:00",
+    }) + "\n")
+
+    # Should pass: standing two levels down, the folder above is still governed.
+    injected = _hook("inject_context.py", {"cwd": str(deep), "prompt": "x"})
+    ok = 0 if "T-001" in injected else 1
+
+    # Should fail: an unrelated tree has no `.faw/` in any parent, so the hook
+    # has to stay quiet. A method that injects itself everywhere is not opt-in.
+    outside = tmp / "unrelated"
+    outside.mkdir()
+    quiet = _hook("inject_context.py", {"cwd": str(outside), "prompt": "x"})
+    bad_rc = 1 if quiet == "" else 0
+    return ok, bad_rc
+
+
 CASOS = [
     ("verify_contract.py", caso_contrato),
     ("verify_diff.py", caso_diff),
@@ -411,6 +458,7 @@ CASOS = [
     ("verify_brief.py", caso_brief),
     ("verify_platform.py", caso_plataforma),
     ("state.py (contract multi-table)", caso_estado_contrato_multitabla),
+    ("hooks (governed root resolution)", caso_raiz_gobernada),
 ]
 
 

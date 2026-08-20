@@ -90,8 +90,8 @@ def main() -> int:
     if data is None:
         return 0
 
-    repo = Path(data.get("cwd") or ".")
-    if not common.active(repo):
+    repo = common.root(data)
+    if repo is None:
         return 0
 
     target = _target(data)

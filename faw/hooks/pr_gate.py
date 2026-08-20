@@ -156,8 +156,8 @@ def run(data: dict) -> int:
     Split from main() so shell_gate.py can run this and the commit gate from a
     single process. Two separate hooks on the same matcher meant two interpreter
     launches for every shell command, and the startup cost is what dominates."""
-    repo = Path(data.get("cwd") or ".")
-    if not common.active(repo):
+    repo = common.root(data)
+    if repo is None:
         return 0
 
     command = (data.get("tool_input") or {}).get("command", "") or ""

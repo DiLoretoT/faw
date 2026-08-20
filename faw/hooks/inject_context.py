@@ -149,9 +149,8 @@ def main() -> int:
     except json.JSONDecodeError:
         return 0  # nothing readable to inject; fail open
 
-    repo = Path(data.get("cwd") or ".")
-
-    if not (repo / ".faw").is_dir():
+    repo = project.root(data.get("cwd"))
+    if repo is None:
         return 0
 
     st = _state(repo)

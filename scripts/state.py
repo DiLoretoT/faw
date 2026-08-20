@@ -42,9 +42,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path.cwd()
-STATE_DIR = ROOT / ".faw"
-LOG = STATE_DIR / "state.jsonl"
 FAW = Path(__file__).resolve().parent.parent
 TRANSITIONS = FAW / "faw" / "transitions.json"
 
@@ -52,6 +49,16 @@ sys.path.insert(0, str(FAW))
 from faw import project as project_mod  # noqa: E402
 from faw import receipts  # noqa: E402
 from faw import tickets as tickets_mod  # noqa: E402
+
+# The governed folder for this invocation, resolved the same way the hooks do it.
+# None means there is no `.faw/` here or in any parent, which is a different
+# situation from "governed and idle" and `status` has to say so: reporting both
+# as "no work recorded" is what let a whole session run believing the method was
+# on when it was not.
+GOVERNED = project_mod.root()
+ROOT = GOVERNED or Path.cwd()
+STATE_DIR = ROOT / ".faw"
+LOG = STATE_DIR / "state.jsonl"
 
 
 def _now() -> str:
@@ -311,9 +318,16 @@ def cmd_start(a) -> int:
 
 
 def cmd_status(a) -> int:
+    if GOVERNED is None:
+        print("\n  Not governed by FAW: no .faw/ in this folder or any parent.")
+        print(f"  Standing in: {Path.cwd()}")
+        print("  Nothing is being enforced here. `mkdir .faw` in the working folder "
+              "activates the method.\n")
+        return 0
     work = current()
     if not work:
-        print("\n  No work recorded.\n")
+        print(f"\n  Governed folder: {GOVERNED}")
+        print("  No work recorded.\n")
         return 0
     print(f"\n  Ticket : {work.get('ticket')}")
     print(f"  Tier   : {work.get('tier')}")

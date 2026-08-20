@@ -82,6 +82,35 @@ DEFAULTS = {
 SURFACE_KEYS = {"client_people", "internal_literals"}
 
 
+def root(start: str | Path | None = None) -> Path | None:
+    """The governed working folder for a call, or None if there is none.
+
+    FAW is opt-in by the presence of `.faw/`. What this answers is *where* to
+    look for it, and the answer is not "exactly where the shell happens to
+    stand".
+
+    A session opened in a subdirectory of the working folder is the same piece
+    of work, and taking governance away because of the depth of the shell is an
+    accident rather than a decision. So the search walks up, and the first
+    ancestor holding `.faw/` wins.
+
+    The walk can in principle find a `.faw/` belonging to a parent that is a
+    different project. That is the same trade-off git, .editorconfig and every
+    other tool that resolves a project root by walking up already accepts, and
+    it fails in the safe direction: applying a method that was not asked for is
+    visible on the first turn, while failing to apply the one that was asked for
+    is invisible. Removing that second failure is why this function exists.
+    """
+    try:
+        here = Path(start).resolve() if start else Path.cwd().resolve()
+    except OSError:
+        return None
+    for candidate in (here, *here.parents):
+        if (candidate / ".faw").is_dir():
+            return candidate
+    return None
+
+
 def _read(path: Path, label: str) -> dict:
     """Read a configuration file. An unreadable file warns instead of being ignored.
 

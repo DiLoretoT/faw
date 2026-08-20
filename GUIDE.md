@@ -383,6 +383,21 @@ session, and files written from the shell through redirection or a heredoc. No h
 can inspect those before they happen. There the method detects and does not prevent,
 and promising otherwise would be lying about a gate.
 
+**Where the method is on, and how to tell.** FAW is opt-in by the presence of
+`.faw/`, resolved by walking up from the directory the session reports. A session
+standing anywhere inside the working folder is governed; a session standing in an
+unrelated tree is not, and the hooks stay quiet there on purpose, because a method
+that injects itself everywhere is not opt-in.
+
+The cost of that quiet is that "not governed" looks exactly like "governed and
+nothing to say". Both are exit 0 with no output. If the working folder is not where
+you think it is — the deliverables in one tree and the backing repository in another
+is the normal case, not an edge one — the method is off and nothing announces it.
+
+`state.py status` is the answer to that, and it names which folder is governing, or
+says plainly that none is. Run it when starting work in a folder for the first time.
+It is the one place where the difference is visible.
+
 ---
 
 ## 10. Client surface
