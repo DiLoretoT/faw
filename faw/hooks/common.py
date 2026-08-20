@@ -20,6 +20,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import project  # noqa: E402
+
 
 def prepare_output() -> None:
     """Force UTF-8 on stdout. Silent if the runtime does not allow it."""
@@ -43,12 +46,24 @@ def payload() -> dict | None:
 
 
 def active(repo: Path) -> bool:
-    """FAW governs this repository only if a `.faw/` directory exists.
+    """Whether `.faw/` sits directly in this folder.
 
-    This is the opt-in of the method: installing the plugin does not impose the
-    process on projects that did not ask for it.
+    The narrow check. Prefer `root()`, which answers the question the hooks
+    actually have: *is there* a governed folder for this call, and which one.
     """
     return (repo / ".faw").is_dir()
+
+
+def root(data: dict | None) -> Path | None:
+    """The governed working folder for this call, or None if there is none.
+
+    Every hook needs the same answer, so it is resolved once here. The reason is
+    the one stated at the top of this module: a check duplicated per hook is how
+    one gate ends up behaving differently from the rest. That had already
+    happened — four hooks called `active()` while `inject_context` inlined the
+    same condition, so a fix to one would have missed the other.
+    """
+    return project.root((data or {}).get("cwd"))
 
 
 def read_state(repo: Path) -> dict | None:
