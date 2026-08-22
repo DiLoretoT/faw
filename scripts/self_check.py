@@ -334,6 +334,52 @@ def caso_estado_contrato_multitabla(tmp: Path) -> tuple[int, int]:
     return ok, bad
 
 
+
+def caso_contrato_una_tabla_sin_declarar(tmp: Path) -> tuple[int, int]:
+    """The common single-table case, which crosses DESIGN without declaring a scope.
+
+    Regression case. The branch that resolves the scope by reading which receipts
+    were issued (state.py `_verify_per_table`, no `tables=` on the move) called a
+    receipts helper that referenced a constant removed when receipts moved to the
+    governed folder. Every ticket that did not declare its tables raised a
+    NameError instead of checking the gate. The multi-table case above did not
+    catch it because it always declares `tables=`, so that branch never ran.
+
+    should-pass: one contract verified, one receipt issued, no declaration.
+    should-fail: two contracts verified and no declaration -- the gate cannot
+    guess which ones the ticket covers, and says so instead of taking the last.
+    """
+    def preparar(nombre: str, contratos: list[tuple[str, str]]) -> int:
+        caja = tmp / nombre
+        caja.mkdir(parents=True)
+        for archivo, contenido in contratos:
+            _write(caja / archivo, contenido)
+        _write(caja / "docs" / "faw" / "CANARY-1" / "profiling.md", PERFIL_MD)
+
+        def state(*args: str) -> int:
+            return _run("state.py", list(args), caja)
+
+        if state("start", "--ticket", "CANARY-1", "--tier", "ARTIFACT",
+                 "--title", "one table") != 0:
+            raise RuntimeError(f"could not start the synthetic ticket in {nombre}")
+        if state("move", "--to", "PROFILING",
+                 "--gate", "user_confirmation=canary") != 0:
+            raise RuntimeError(f"could not move to PROFILING in {nombre}")
+        if state("move", "--to", "DESIGN",
+                 "--gate", "profile=docs/faw/CANARY-1/profiling.md") != 0:
+            raise RuntimeError(f"could not move to DESIGN in {nombre}")
+        for archivo, _ in contratos:
+            if _run("verify_contract.py", [archivo, "--syntax-only"], caja) != 0:
+                raise RuntimeError(f"synthetic contract {archivo} failed the syntax check")
+        # No `--gate tables=`: the scope is resolved from the receipts on disk.
+        return state("move", "--to", "BUILD", "--gate", "user_confirmation=canary")
+
+    ok = preparar("una", [("core.dim_fecha.yml", CONTRATO_YML)])
+    bad = preparar("dos", [("core.dim_fecha.yml", CONTRATO_YML),
+                           ("core.dim_moneda.yml", CONTRATO_B_YML)])
+    return ok, bad
+
+
 GOOD_BRIEF = """# Report brief: CANARY-B
 
 ## Objective
@@ -699,6 +745,7 @@ CASOS = [
     ("verify_brief.py", caso_brief),
     ("verify_platform.py", caso_plataforma),
     ("state.py (contract multi-table)", caso_estado_contrato_multitabla),
+    ("state.py (contract, one table, no declaration)", caso_contrato_una_tabla_sin_declarar),
     ("hooks (governed root resolution)", caso_raiz_gobernada),
 ]
 
