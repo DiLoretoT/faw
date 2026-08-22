@@ -26,7 +26,7 @@ This script does TWO things of different strength, on purpose:
 
 Usage
 -----
-  python verify_report.py --report "MyReport.Report" --model model.bim.json
+  python verify_report.py --report "<report name>"       --definition MyReport.Report --model model.bim.json
 
 Exit: 0 if it finds no unreviewed orphan fields, 1 if there is something for a
 human to look at, 2 if the inputs are wrong.
@@ -41,7 +41,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from faw import receipts  # noqa: E402
+from faw import project, receipts  # noqa: E402
 
 
 def _find_filters(node, file_path: str, found: list[dict], trail: str = "") -> None:
@@ -161,15 +161,19 @@ def main() -> int:
         pass
 
     p = argparse.ArgumentParser(description="FAW report gate")
-    p.add_argument("--report", type=Path, required=True,
-                   help="report project folder (.Report)")
+    p.add_argument("--report", required=True,
+                   help="report name; resolves its layout agreement under "
+                        "docs/faw/reports/<report>/layout.md")
+    p.add_argument("--definition", type=Path, required=True,
+                   help="report project folder (.Report), the artifact that was built")
     p.add_argument("--model", type=Path, required=True, help="model definition (JSON)")
     p.add_argument("--layout", type=Path,
-                   help="layout agreement to cross-check the built pages against")
+                   help="explicit path to the layout agreement, overriding the one "
+                        "resolved from --report")
     args = p.parse_args()
 
-    if not args.report.exists() or not args.report.is_dir():
-        print(f"ERROR: the folder {args.report} does not exist", file=sys.stderr)
+    if not args.definition.exists() or not args.definition.is_dir():
+        print(f"ERROR: the folder {args.definition} does not exist", file=sys.stderr)
         return 2
     if not args.model.exists():
         print(f"ERROR: {args.model} does not exist", file=sys.stderr)
@@ -181,9 +185,9 @@ def main() -> int:
         print(f"ERROR: malformed model: {e}", file=sys.stderr)
         return 2
 
-    json_files = list(args.report.rglob("*.json"))
+    json_files = list(args.definition.rglob("*.json"))
     if not json_files:
-        print(f"ERROR: no .json file found under {args.report}", file=sys.stderr)
+        print(f"ERROR: no .json file found under {args.definition}", file=sys.stderr)
         return 2
 
     filters: list[dict] = []
@@ -193,27 +197,33 @@ def main() -> int:
             data = json.loads(jf.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue  # some project files are not content JSON
-        rel = str(jf.relative_to(args.report)).replace("\\", "/")
+        rel = str(jf.relative_to(args.definition)).replace("\\", "/")
         _find_filters(data, rel, filters)
         _find_fields(data, used_fields)
 
     available = model_fields(model)
     orphans = sorted(c for c in used_fields if c not in available)
 
-    print(f"\n=== Report: {args.report.name} ===")
+    print(f"\n=== Report: {args.report} ===")
     print(f"  JSON files inspected: {len(json_files)}")
     print(f"  fields and measures referenced (heuristic): {len(used_fields)}")
 
     layout_findings: list[str] = []
+    layout_path = None
     if args.layout:
         layout_path = (args.layout if args.layout.is_absolute()
-                       else Path.cwd() / args.layout)
+                       else (project.root() or Path.cwd()) / args.layout)
+    else:
+        resolved = project.report_dir(args.report) / "layout.md"
+        if resolved.exists():
+            layout_path = resolved
+    if layout_path is not None:
         if not layout_path.exists():
             print(f"ERROR: {layout_path} does not exist", file=sys.stderr)
             return 2
-        layout_findings = _compare_layout(args.report, layout_path)
+        layout_findings = _compare_layout(args.definition, layout_path)
         print(f"  pages agreed: {len(_declared_pages(layout_path))}   "
-              f"built: {len(_built_pages(args.report))}")
+              f"built: {len(_built_pages(args.definition))}")
 
     has_problem = bool(layout_findings)
 
@@ -251,7 +261,7 @@ def main() -> int:
     detail = (f"{len(json_files)} files, {len(used_fields)} fields referenced, "
               f"{len(orphans)} orphans, {len(filters)} filters to review")
     inputs = [args.model]
-    if args.layout:
+    if layout_path is not None:
         detail += ", pages match the layout agreement"
         inputs.append(args.layout)
     if passed:

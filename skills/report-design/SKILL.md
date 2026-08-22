@@ -1,6 +1,6 @@
 ---
 name: report-design
-description: Runs PROFILING and DESIGN for the REPORT tier. Explores the data, reads it through the business, and turns that into a layout agreement of pages and questions before any page gets built. Use after the brief is agreed and before building a report.
+description: Runs PROFILING and DESIGN for the REPORT tier. Explores the data, reads it through the business, and turns that into a layout agreement of pages and questions before any page gets built. Covers both a new report and a change to one that already exists. Use after the brief is agreed and before building a report.
 ---
 
 # Report design
@@ -74,11 +74,45 @@ For each question in the brief, decide how it gets answered: which measures,
 which dimensions, at what grain, in what visual, and whether it earns its own
 page or is read alongside another question.
 
-The output is `docs/faw/<ticket>/layout.md`, from
-`faw/contracts/TEMPLATE.layout.md`. `scripts/verify_layout.py` checks it, and
-what it requires is that **every page states which question from the brief it
-answers**. A page that answers none either uncovered a question that belongs in
-the brief, or does not belong in the report.
+The output is `docs/faw/reports/<report>/layout.md`, from
+`faw/contracts/TEMPLATE.layout.md`. `scripts/verify_layout.py --report "<report>"`
+checks it, and what it requires is that **every page states which question from
+the brief it answers**. A page that answers none either uncovered a question that
+belongs in the brief, or does not belong in the report.
+
+## Changing a report that already exists
+
+The layout lives under the report and describes all of it, so a change amends the
+document that is there rather than opening a rival one. Three passes still run,
+and what changes is where each one starts.
+
+**First pass.** Only the data the change touches. What was already profiled for
+this report was profiled against a state of the model that may have moved, so
+re-measure what the change reads instead of trusting the earlier numbers, and
+leave the rest alone.
+
+**Second pass.** Why the report is being changed, which is a business question
+and rarely the one that gets asked. "Add revenue by region" is a request, not a
+reason. What decision is not being made today with what is on screen? Often the
+answer is that an existing page is not read, and adding a page makes that worse.
+
+**Third pass.** Amend the layout. New pages are added with the question each one
+answers, like any other. Pages that change what they answer are rewritten.
+**Pages that stop being useful are removed from the report and from the
+agreement**, and this is where a change either keeps a report readable or grows
+it one page at a time until nobody opens it. Removal is proposed to the user with
+the reason, never done silently.
+
+Amending changes the file's hash, so the receipt from the previous version stops
+being valid and the gate is crossed again on the amended text. That is the
+intended behaviour: the agreement being checked is the one in force, not the one
+that was agreed a year ago.
+
+**When the report has no layout.** Nobody wrote one, which is the usual state of
+an inherited dashboard. Reconstruct it from what is built: one entry per page
+with what it shows and, where it can be established, what question it answers.
+The pages whose purpose nobody can state are the finding, and they go to the user
+as a question rather than being written up as if they had been agreed.
 
 ## What a good report does with the tool
 

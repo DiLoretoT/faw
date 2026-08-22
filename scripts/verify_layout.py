@@ -19,8 +19,8 @@ same reasoning as the brief gate, and the same limits.
 
 Usage
 -----
-  python verify_layout.py --ticket <TICKET>
-  python verify_layout.py --layout docs/faw/<TICKET>/layout.md
+  python verify_layout.py --report "<report name>"
+  python verify_layout.py --layout <path>
 
 Exit: 0 if the agreement is complete and a receipt is issued, 1 if something is
 missing, 2 if the inputs are wrong.
@@ -96,7 +96,8 @@ def main() -> int:
         pass
 
     p = argparse.ArgumentParser(description="FAW layout agreement gate (REPORT tier)")
-    p.add_argument("--ticket", help="ticket; looks for docs/faw/<ticket>/layout.md")
+    p.add_argument("--report", help="report name; looks for its layout under "
+                                    "docs/faw/reports/<report>/layout.md")
     p.add_argument("--layout", type=Path, help="explicit path to the layout agreement")
     a = p.parse_args()
 
@@ -104,10 +105,10 @@ def main() -> int:
 
     if a.layout:
         path = a.layout if a.layout.is_absolute() else root / a.layout
-    elif a.ticket:
-        path = root / "docs" / "faw" / a.ticket / "layout.md"
+    elif a.report:
+        path = project.report_dir(a.report) / "layout.md"
     else:
-        print("ERROR: --ticket or --layout is required", file=sys.stderr)
+        print("ERROR: --report or --layout is required", file=sys.stderr)
         return 2
 
     print(f"\n=== Layout agreement: {path} ===")

@@ -126,7 +126,8 @@ def main() -> int:
             "Still missing: agree on tier and scope with the user, wait for their "
             "approval, and only then move phase:\n"
             f"  python {STATE_PY} move --to <PHASE> --gate user_confirmation=\"...\"\n"
-            "One exception can be written here: docs/faw/<ticket>/brief.md for the REPORT tier."
+            "One exception can be written here: docs/faw/reports/<report>/brief.md for the "
+            "REPORT tier."
         )
 
     if phase == "PROFILING":

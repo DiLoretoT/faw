@@ -53,11 +53,50 @@ continues through profiling and design like any other. What changes is what each
 one measures and produces; see the `report-design` skill. Building a report
 does not start without agreeing **with the user** what it exists for. Objective,
 audience, the questions it has to answer, what is out of scope, the data source,
-and who validates the numbers. It is filled in at `docs/faw/<ticket>/brief.md`
-from `faw/contracts/TEMPLATE.brief.md`, and `scripts/verify_brief.py` checks it.
-Inferring the scope by reading the semantic model is not classifying. It is
-writing the brief alone, without the conversation that validates it. The official
-report planning skill covers the mechanics of that conversation; read it first.
+and who validates the numbers. It is filled in at
+`docs/faw/reports/<report>/brief.md` from `faw/contracts/TEMPLATE.brief.md`, and
+`scripts/verify_brief.py --report "<report>"` checks it. Inferring the scope by
+reading the semantic model is not classifying. It is writing the brief alone,
+without the conversation that validates it. The official report planning skill
+covers the mechanics of that conversation; read it first.
+
+### The agreements belong to the report, not to the ticket
+
+The brief and the layout live under `docs/faw/reports/<report>/`, next to the
+report they describe, the way a data contract sits next to its table rather than
+next to the ticket that created it. They are not evidence that a piece of work
+happened. They are the standing answer to what the report is for and what each
+page shows, and the next change to that report reads them, argues with them and
+amends them.
+
+Filing them under the ticket instead would produce a second brief per change,
+each one written as if the report were new, and the questions already settled
+would be asked again. It would also break the check itself: `verify_report.py`
+compares every page that was built against every page that was agreed, so a
+layout covering only this change would report every page that existed before it
+as built without agreement.
+
+**Changing a report that already has agreements.** Same tier, same gates. What
+changes is where classification starts. Read the brief in force, state in one
+line what it already settles, and ask only about what the change moves. If the
+change alters the objective, the audience or the questions, the brief is amended
+and **that amendment is the work of classification**; if it adds or reshapes a
+page, the layout is amended in design. Amending invalidates the receipt, because
+the file's hash changed, so the gate is crossed again on the amended text rather
+than on the version that was agreed a year ago.
+
+**A report that exists and has no brief.** The common case: a dashboard someone
+inherited. The first change writes the brief for what is already there, and that
+is the work, not a formality, because nobody can say what a page is for without
+it. It is reconstructed from what can be read and confirmed with whoever owns the
+numbers. Whatever cannot be answered is written down as an open question rather
+than invented, and the pages nobody can justify are listed for the user to
+decide on instead of being agreed by default.
+
+**A cosmetic change is not this.** Renaming a title, moving a visual, fixing a
+colour. Nothing about what the report answers changes, so there is nothing to
+amend and it goes through `MINOR-CHANGE`. The line is whether the agreement
+would have to change.
 
 ---
 

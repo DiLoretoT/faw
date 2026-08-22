@@ -1,9 +1,15 @@
-# Layout agreement: <TICKET>
+# Layout agreement: <REPORT NAME>
 
 > Filled in during DESIGN, after profiling the model and before building a page.
 > It is the answer to "what are we going to build", agreed with the user, in the
 > same way the brief answered "what is this for".
-> `scripts/verify_layout.py` checks it and rejects an unfilled template.
+> `scripts/verify_layout.py --report "<report>"` checks it and rejects an unfilled
+> template.
+>
+> It lives at `docs/faw/reports/<report>/layout.md` and describes the whole report,
+> not one change to it. `verify_report.py` compares every page that was built
+> against every page declared here, so a page that is removed from the report is
+> removed from this document as well.
 
 ## What the profiling changed
 
@@ -50,3 +56,12 @@ whatever order the pages happened to be created in.>
 <Visual choices that are not obvious and would be questioned in a review. One
 line each. Why a matrix and not a chart, why this measure is on a second axis,
 why a page repeats a filter that another one already has.>
+
+## Amendments
+
+One line per change that touched this agreement, most recent last. It exists so
+the next person can see what was decided and when, rather than reading the
+current text as if it had always said this.
+
+| Date | Ticket | What changed and why |
+|---|---|---|

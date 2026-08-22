@@ -265,11 +265,13 @@ def caso_reporte(tmp: Path) -> tuple[int, int]:
 
     rep_ok = tmp / "MiReporte_ok.Report"
     _write(rep_ok / "visual.json", json.dumps(VISUAL_OK, indent=2))
-    ok = _run("verify_report.py", ["--report", str(rep_ok), "--model", str(model)], tmp)
+    ok = _run("verify_report.py", ["--report", "canary", "--definition", str(rep_ok),
+                                   "--model", str(model)], tmp)
 
     rep_bad = tmp / "MiReporte_bad.Report"
     _write(rep_bad / "visual.json", json.dumps(VISUAL_HUERFANO, indent=2))
-    bad = _run("verify_report.py", ["--report", str(rep_bad), "--model", str(model)], tmp)
+    bad = _run("verify_report.py", ["--report", "canary", "--definition", str(rep_bad),
+                                    "--model", str(model)], tmp)
     return ok, bad
 
 
@@ -602,8 +604,8 @@ def caso_recibo_por_ticket(tmp: Path) -> tuple[int, int]:
 
     if state("start", "--tier", "REPORT", "--title", "first report") != 0:
         raise RuntimeError("could not start the first synthetic ticket")
-    _write(folder / "docs" / "faw" / "T-001" / "brief.md", GOOD_BRIEF)
-    if _run("verify_brief.py", ["--ticket", "T-001"], folder) != 0:
+    _write(folder / "docs" / "faw" / "reports" / "collections" / "brief.md", GOOD_BRIEF)
+    if _run("verify_brief.py", ["--report", "collections"], folder) != 0:
         raise RuntimeError("the synthetic brief did not pass its own verifier")
 
     # Should pass: T-001 crosses on the receipt T-001 produced.
@@ -723,12 +725,14 @@ def caso_reporte_vs_layout(tmp: Path) -> tuple[int, int]:
 
     # Should pass: the pages built are the pages agreed.
     ok = _run("verify_report.py",
-              ["--report", str(_report("matching", ["Weekly escalation", "Overdue trend"])),
+              ["--report", "canary",
+               "--definition", str(_report("matching", ["Weekly escalation", "Overdue trend"])),
                "--model", str(model), "--layout", str(layout)], tmp)
 
     # Should fail: a page nobody agreed, and one that was agreed and never built.
     bad = _run("verify_report.py",
-               ["--report", str(_report("drifted", ["Weekly escalation", "Scratch page"])),
+               ["--report", "canary",
+                "--definition", str(_report("drifted", ["Weekly escalation", "Scratch page"])),
                 "--model", str(model), "--layout", str(layout)], tmp)
     return ok, bad
 

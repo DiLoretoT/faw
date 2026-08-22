@@ -27,6 +27,26 @@
 
 ### Changed
 
+- The brief and the layout live under `docs/faw/reports/<report>/` instead of
+  under the ticket that produced them. They are not evidence that a piece of work
+  happened, they are the standing answer to what a report is for and what each
+  page shows, so a second change to the same report amends them rather than
+  writing a rival copy and asking again what was already settled. Filing them per
+  ticket also broke the check: `verify_report.py` compares every page built
+  against every page agreed, so a layout covering one change would report every
+  page that existed before it as built without agreement.
+- `verify_brief.py` and `verify_layout.py` take `--report "<name>"` in place of
+  `--ticket`. In `verify_report.py`, `--report` is now that same name and the
+  folder that was built is `--definition`, so the flag means the same thing in
+  all three.
+- `MINOR-CHANGE` admits a cosmetic report change, which used to pay the full
+  chain to rename a title. The line is whether the layout agreement would have to
+  change: adding a page or changing what one answers is `REPORT`, moving a visual
+  is not.
+- The classification and report design skills cover changing a report that
+  already exists, and the case where the report has no brief because nobody ever
+  wrote one, which is the usual state of an inherited dashboard.
+
 - The three checkpoints are no longer described as fixed phases. Which ones they
   are depends on the tier: for REPORT they are the end of classification, design
   and build. Three remains the ceiling.

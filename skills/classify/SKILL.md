@@ -48,12 +48,24 @@ Phase 1 of FAW. **Do not build anything yet.**
 6. **If the tier is `REPORT`, classification includes the brief.** Building does not
    start without agreeing **with the user** what the report exists for. Objective,
    audience, the questions it has to answer, what is out of scope, the data source,
-   and who validates the numbers. It is filled in at `docs/faw/<ticket>/brief.md`
-   from `faw/contracts/TEMPLATE.brief.md`, and `scripts/verify_brief.py` checks it,
-   rejecting an unfilled template. Inferring the scope by reading the semantic
-   model **is not classifying**. It is writing the brief alone, without the
-   conversation that validates it. The official report planning skill covers the
-   mechanics of that conversation; read it first.
+   and who validates the numbers. It is filled in at
+   `docs/faw/reports/<report>/brief.md` from `faw/contracts/TEMPLATE.brief.md`, and
+   `scripts/verify_brief.py --report "<report>"` checks it, rejecting an unfilled
+   template. Inferring the scope by reading the semantic model **is not
+   classifying**. It is writing the brief alone, without the conversation that
+   validates it. The official report planning skill covers the mechanics of that
+   conversation; read it first.
+
+7. **If that report already has a brief, do not write a second one.** The brief
+   belongs to the report and not to this ticket. Read the one in force, state in
+   one line what it already settles, and ask only about what this change moves.
+   Amend it when the change alters the objective, the audience or the questions;
+   that amendment is the work of classification. Amending changes the file's hash
+   and invalidates the receipt, so the gate is crossed again on the amended text.
+   If the report has no brief because nobody ever wrote one, writing it for what
+   already exists is the work: reconstruct it from what can be read, confirm it
+   with whoever owns the numbers, and record what cannot be answered as an open
+   question instead of inventing it.
 
 ## Closing
 

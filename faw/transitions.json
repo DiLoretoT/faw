@@ -73,7 +73,7 @@
     },
 
     "MINOR-CHANGE": {
-      "_note": "Reclassified to ARTIFACT if the change touches schema, business logic, the consumption layer, or exceeds roughly 30 effective lines.",
+      "_note": "Reclassified to ARTIFACT if the change touches schema, business logic, the consumption layer, or exceeds roughly 30 effective lines. A report change belongs here only while it is cosmetic: renaming a title, moving a visual, fixing a colour. As soon as it changes what a page answers, adds a page or changes a measure the page reads, it is REPORT, because the layout agreement has to be amended and that is the thing being decided.",
       "CLASSIFICATION->BUILD":     { "gates": [] },
       "BUILD->PUBLICATION":        { "gates": ["assertions"] },
       "PUBLICATION->IDLE":         { "gates": ["metadata", "git-clean"] },
