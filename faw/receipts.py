@@ -215,12 +215,12 @@ def listing(gate: str) -> dict[str | None, Path]:
     name, because the name sanitizes characters and is not reversible.
     """
     found: dict[str | None, Path] = {}
-    if not RECEIPTS_DIR.is_dir():
+    if not _receipts_dir().is_dir():
         return found
-    legacy = RECEIPTS_DIR / f"{gate}.json"
+    legacy = _receipts_dir() / f"{gate}.json"
     if legacy.exists():
         found[None] = legacy
-    for p in RECEIPTS_DIR.glob(f"{gate}.*.json"):
+    for p in _receipts_dir().glob(f"{gate}.*.json"):
         try:
             r = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
