@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.1.2 - 2026-08-22
+
+### Changed
+
+- Two passages argued a point about data work by asserting its opposite about
+  software: that a wrong result there usually has a test that can express it,
+  and that its requirements come from people. Both claims are wrong often
+  enough to weaken the argument they were supporting, which stands on its own.
+  What survives is the claim about data work, without the comparison.
+
 ## 4.1.1 - 2026-08-22
 
 ### Changed

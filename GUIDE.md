@@ -17,12 +17,10 @@ why.
 That variability is what FAW addresses. It does not promise to save time; it
 reduces the surface where an error passes without anyone reviewing it.
 
-The reason it matters more here than in application development is what a data
-artifact is. In software, a wrong result usually has a test that can express it. A
-function is given inputs and its output is compared against what it should be. In
-data work, **the correct result is not verifiable by the code**. No test knows
-whether 2,705 rows is the number that should have come out. That is only known by
-measuring against the source, and only if somebody measures.
+The reason is what a data artifact is. **The correct result is not verifiable by
+the code.** No test knows whether 2,705 rows is the number that should have come
+out. That is only known by measuring against the source, and only if somebody
+measures.
 
 Four concrete ways this shows up:
 
