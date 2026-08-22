@@ -19,8 +19,8 @@ placeholders survive.
 
 Usage
 -----
-  python verify_brief.py --ticket <TICKET>
-  python verify_brief.py --brief docs/faw/<TICKET>/brief.md
+  python verify_brief.py --report "<report name>"
+  python verify_brief.py --brief <path>
 
 Exit: 0 if the brief is complete and a receipt is issued, 1 if something is
 missing, 2 if the inputs are wrong.
@@ -34,7 +34,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from faw import receipts  # noqa: E402
+from faw import project, receipts  # noqa: E402
 
 # Each section with the minimum useful content required, in characters. These are
 # not arbitrary numbers: a single department name is not an audience, and "see
@@ -101,16 +101,17 @@ def main() -> int:
         pass
 
     p = argparse.ArgumentParser(description="FAW brief gate (REPORT tier)")
-    p.add_argument("--ticket", help="ticket; looks for docs/faw/<ticket>/brief.md")
+    p.add_argument("--report", help="report name; looks for its brief under "
+                                    "docs/faw/reports/<report>/brief.md")
     p.add_argument("--brief", type=Path, help="explicit path to the brief")
     a = p.parse_args()
 
     if a.brief:
-        path = a.brief
-    elif a.ticket:
-        path = Path("docs") / "faw" / a.ticket / "brief.md"
+        path = a.brief if a.brief.is_absolute() else (project.root() or Path.cwd()) / a.brief
+    elif a.report:
+        path = project.report_dir(a.report) / "brief.md"
     else:
-        print("ERROR: --ticket or --brief is required", file=sys.stderr)
+        print("ERROR: --report or --brief is required", file=sys.stderr)
         return 2
 
     print(f"\n=== Brief: {path} ===")

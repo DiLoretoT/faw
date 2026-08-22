@@ -1,5 +1,61 @@
 # Changelog
 
+## 4.1.0 - 2026-08-22
+
+### Added
+
+- The REPORT tier gains profiling and design. A report used to go straight from
+  the brief into building, so it was built on data nobody had measured and pages
+  nobody had agreed. It now profiles the semantic model it will consume and
+  agrees a layout first.
+- The `layout` gate, checked by `verify_layout.py`. What it verifies is the
+  layout **agreement** and not the layout: that every page states which question
+  from the brief it answers, and that no template placeholder survived. Whether
+  the layout is any good is not machine-verifiable and the gate does not claim
+  it is.
+- `verify_report.py --layout` cross-checks the pages that were built against the
+  ones that were agreed. Without it the agreement was read once on the way into
+  building and never again, so a report could drift from it and still publish.
+- Back edges `BUILD->DESIGN` and `DESIGN->PROFILING` for REPORT. A layout that
+  building shows to be unviable previously had only two exits: abandoning, or
+  drifting from the agreement in silence.
+- `report-design` skill, covering the three passes that make up profiling and
+  design for a report: what is in the data, what those data mean to the business,
+  and what gets built. The passes accumulate in one context on purpose, because
+  restarting each one loses what the previous found.
+- `TEMPLATE.layout.md`, and self-check cases for both new checks.
+
+### Changed
+
+- The brief and the layout live under `docs/faw/reports/<report>/` instead of
+  under the ticket that produced them. They are not evidence that a piece of work
+  happened, they are the standing answer to what a report is for and what each
+  page shows, so a second change to the same report amends them rather than
+  writing a rival copy and asking again what was already settled. Filing them per
+  ticket also broke the check: `verify_report.py` compares every page built
+  against every page agreed, so a layout covering one change would report every
+  page that existed before it as built without agreement.
+- `verify_brief.py` and `verify_layout.py` take `--report "<name>"` in place of
+  `--ticket`. In `verify_report.py`, `--report` is now that same name and the
+  folder that was built is `--definition`, so the flag means the same thing in
+  all three.
+- The `report` receipt hashes the definition that was built, not only the model.
+  With the model alone, a page edited after the gate passed left the receipt
+  valid and the report published without being checked again.
+- `MINOR-CHANGE` admits a cosmetic report change, which used to pay the full
+  chain to rename a title. The line is whether the layout agreement would have to
+  change: adding a page or changing what one answers is `REPORT`, moving a visual
+  is not.
+- The classification and report design skills cover changing a report that
+  already exists, and the case where the report has no brief because nobody ever
+  wrote one, which is the usual state of an inherited dashboard.
+
+- The three checkpoints are no longer described as fixed phases. Which ones they
+  are depends on the tier: for REPORT they are the end of classification, design
+  and build. Three remains the ceiling.
+- The per-turn context takes the tier into account, not only the phase. A report
+  in DESIGN was being told "grain in one sentence, natural key verified", which
+  is table guidance, and what arrives every turn outweighs what is read once.
 ## 4.0.3 - 2026-08-22
 
 ### Fixed

@@ -57,6 +57,21 @@ PLATFORM_TOOLING = (
     "them applies. Do not assume the catalog from memory."
 )
 
+# Where a tier needs a different rule for the same phase. Consulted before
+# RULE_BY_PHASE, which stays the default.
+RULE_BY_TIER_PHASE = {
+    ("REPORT", "PROFILING"):
+        "Read-only, over the model the report will consume. Grain of each table, "
+        "measures that already exist, cardinality of what will slice, and the "
+        "business totals the report has to reproduce. Every number with its query. "
+        "If the model cannot be queried from here, hand the queries to the user "
+        "rather than estimating.",
+    ("REPORT", "DESIGN"):
+        "Read the profiling through the business first, then turn it into a layout. "
+        "Every page states which question from the brief it answers. Closes with "
+        "the user agreeing the pages before any of them gets built.",
+}
+
 RULE_BY_PHASE = {
     "CLASSIFICATION": "Restate the request, look at the real state, assign a tier, define "
                       "what is NOT included. Build nothing yet. Closes with the user's "
@@ -174,7 +189,11 @@ def main() -> int:
         ]
     else:
         lines.append(f"[FAW] {tier} - {phase} | {ticket}: {title}")
-        rule = RULE_BY_PHASE.get(phase)
+        # The rule depends on the tier as well as the phase. DESIGN of a report
+        # is not DESIGN of a table, and injecting "grain in one sentence, natural
+        # key verified" at someone laying out pages would win over the skill:
+        # what arrives every turn outweighs what is read once.
+        rule = RULE_BY_TIER_PHASE.get((tier or "", phase or "")) or RULE_BY_PHASE.get(phase)
         if rule:
             lines.append(f"Phase {phase}: {rule}")
 

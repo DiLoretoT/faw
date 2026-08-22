@@ -49,6 +49,7 @@ project declares.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -80,6 +81,31 @@ DEFAULTS = {
 # Top-level keys that belong to the surface gate, read by surface.py from the
 # same file. Known, so the unknown-key warning does not fire on them.
 SURFACE_KEYS = {"client_people", "internal_literals"}
+
+
+
+def report_slug(name: str) -> str:
+    """Folder name for a report, derived from the name people call it by.
+
+    Slugified rather than used raw because the name travels through a path and
+    reports get called things like "Cobranzas / semanal (v2)".
+    """
+    slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    return slug or "report"
+
+
+def report_dir(name: str, start: str | Path | None = None) -> Path:
+    """Where the agreements about a report live.
+
+    Under the report and not under the ticket that produced them. A brief and a
+    layout are not evidence that a piece of work happened: they are the standing
+    answer to what the report is for and what each page shows. The second ticket
+    that touches the same report amends them instead of writing a rival copy,
+    the way a data contract sits next to its table rather than next to the ticket
+    that created it.
+    """
+    base = root(start) or Path.cwd()
+    return base / "docs" / "faw" / "reports" / report_slug(name)
 
 
 def root(start: str | Path | None = None) -> Path | None:
