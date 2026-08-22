@@ -4,15 +4,15 @@
 
   "gates": {
     "profile":           { "strength": "receipt",     "verifies": "docs/faw/<ticket>/profiling.md exists and contains the queries behind its numbers" },
-    "contract":          { "strength": "receipt",     "verifies": "scripts/verify_contract.py <contract>.yml --syntax-only — for EVERY table in the ticket; with more than one, declare the scope on the move: --gate tables=t1,t2,..." },
+    "contract":          { "strength": "receipt",     "verifies": "scripts/verify_contract.py <contract>.yml --syntax-only, for EVERY table in the ticket; with more than one, declare the scope on the move: --gate tables=t1,t2,..." },
     "brief":             { "strength": "machine",     "verifies": "scripts/verify_brief.py" },
-    "platform":          { "strength": "machine",     "verifies": "scripts/verify_platform.py — also run by the commit hook against the staged diff, so it is not tied to a single edge of the graph" },
+    "platform":          { "strength": "machine",     "verifies": "scripts/verify_platform.py, and also run by the commit hook against the staged diff, so it is not tied to a single edge of the graph" },
     "assertions":        { "strength": "declaration", "verifies": "the agent's record" },
     "authorization":     { "strength": "declaration", "verifies": "the agent's record" },
     "tooling":           { "strength": "declaration", "verifies": "which official platform skill or tool was used for this artifact, or why none applied. A declaration, because no hook can tell whether documentation was read. What it does buy: the choice is stated and recorded instead of assumed, and a wrong one becomes visible in the log rather than in the output." },
-    "schema":            { "strength": "machine",     "verifies": "scripts/verify_contract.py <contract>.yml --schema <snapshot>.json — for EVERY table in the ticket; with more than one, declare the scope on the move: --gate tables=t1,t2,..." },
+    "schema":            { "strength": "machine",     "verifies": "scripts/verify_contract.py <contract>.yml --schema <snapshot>.json, for EVERY table in the ticket; with more than one, declare the scope on the move: --gate tables=t1,t2,..." },
     "model":             { "strength": "machine",     "verifies": "scripts/verify_model.py" },
-    "report":            { "strength": "machine",     "verifies": "scripts/verify_report.py — with --layout it also cross-checks the built pages against the ones the layout agreement declared" },
+    "report":            { "strength": "machine",     "verifies": "scripts/verify_report.py, which with --layout also cross-checks the built pages against the ones the layout agreement declared" },
     "layout":            { "strength": "machine",     "verifies": "scripts/verify_layout.py. Reads the layout agreement document, not the report. What it checks is that every page declares which question it answers and that no template placeholder survived, the same way the brief gate checks the brief. Whether the layout is any good is not machine-verifiable and this gate does not claim it is." },
     "reconciliation":    { "strength": "declaration", "verifies": "the agent's record, naming who is accountable" },
     "metadata":          { "strength": "machine",     "verifies": "scripts/verify_diff.py" },
@@ -31,11 +31,11 @@
 
   "tiers": {
     "ARTIFACT": {
-      "CLASSIFICATION->PROFILING": { "gates": ["user_confirmation"], "_checkpoint": "1 of 3 — end of CLASSIFICATION" },
+      "CLASSIFICATION->PROFILING": { "gates": ["user_confirmation"], "_checkpoint": "1 of 3, end of CLASSIFICATION" },
       "PROFILING->DESIGN":         { "gates": ["profile"], "_checkpoint": null },
-      "DESIGN->BUILD":             { "gates": ["contract", "user_confirmation"], "_checkpoint": "2 of 3 — end of DESIGN, before building" },
+      "DESIGN->BUILD":             { "gates": ["contract", "user_confirmation"], "_checkpoint": "2 of 3, end of DESIGN, before building" },
       "BUILD->VALIDATION":         { "gates": ["assertions", "authorization", "tooling"], "_checkpoint": null },
-      "VALIDATION->PUBLICATION":   { "gates": ["schema", "user_confirmation"], "_checkpoint": "3 of 3 — end of VALIDATION, before publishing" },
+      "VALIDATION->PUBLICATION":   { "gates": ["schema", "user_confirmation"], "_checkpoint": "3 of 3, end of VALIDATION, before publishing" },
       "PUBLICATION->IDLE":         { "gates": ["metadata", "git-clean"] },
       "DESIGN->PROFILING":         { "gates": [] },
       "VALIDATION->BUILD":         { "gates": [] }
@@ -43,11 +43,11 @@
 
     "MODEL": {
       "_note": "Semantic model: tables, relationships, measures, storage mode. A wrong storage mode, a reversed relationship or a wrong summarizeBy is invisible while building and shows up in the number the end user reads, by which point it is already published. Hence the stricter gates in this tier.",
-      "CLASSIFICATION->PROFILING": { "gates": ["user_confirmation"], "_checkpoint": "1 of 3 — end of CLASSIFICATION" },
+      "CLASSIFICATION->PROFILING": { "gates": ["user_confirmation"], "_checkpoint": "1 of 3, end of CLASSIFICATION" },
       "PROFILING->DESIGN":         { "gates": ["profile"], "_checkpoint": null },
-      "DESIGN->BUILD":             { "gates": ["contract", "user_confirmation"], "_checkpoint": "2 of 3 — end of DESIGN, before building" },
+      "DESIGN->BUILD":             { "gates": ["contract", "user_confirmation"], "_checkpoint": "2 of 3, end of DESIGN, before building" },
       "BUILD->VALIDATION":         { "gates": ["authorization", "tooling"], "_checkpoint": null },
-      "VALIDATION->PUBLICATION":   { "gates": ["model", "reconciliation", "user_confirmation"], "_checkpoint": "3 of 3 — end of VALIDATION, before publishing" },
+      "VALIDATION->PUBLICATION":   { "gates": ["model", "reconciliation", "user_confirmation"], "_checkpoint": "3 of 3, end of VALIDATION, before publishing" },
       "PUBLICATION->IDLE":         { "gates": ["metadata", "git-clean"] },
       "DESIGN->PROFILING":         { "gates": [] },
       "VALIDATION->BUILD":         { "gates": [] }
@@ -55,10 +55,10 @@
 
     "REPORT": {
       "_note": "How a report is built inside BUILD stays unconstrained: the visual choices and the arrangement are judgment, and a gate over them could not be satisfied honestly. What is not unconstrained is arriving there. A report gets built on data nobody measured and pages nobody agreed unless something asks first, so this tier profiles the model it is going to consume and agrees a layout before building. The two silent failures it closes are the report that is precise about a question nobody asked, and the development filter left behind and persisted in the definition: numbers that are credible and filtered.",
-      "CLASSIFICATION->PROFILING": { "gates": ["brief", "user_confirmation"], "_checkpoint": "1 of 3 — end of CLASSIFICATION: objective, audience and questions agreed" },
+      "CLASSIFICATION->PROFILING": { "gates": ["brief", "user_confirmation"], "_checkpoint": "1 of 3, end of CLASSIFICATION: objective, audience and questions agreed" },
       "PROFILING->DESIGN":         { "gates": ["profile"], "_checkpoint": null },
-      "DESIGN->BUILD":             { "gates": ["layout", "user_confirmation"], "_checkpoint": "2 of 3 — end of DESIGN: pages and their questions agreed, before building" },
-      "BUILD->PUBLICATION":        { "gates": ["report", "reconciliation", "tooling", "user_confirmation"], "_checkpoint": "3 of 3 — before publishing" },
+      "DESIGN->BUILD":             { "gates": ["layout", "user_confirmation"], "_checkpoint": "2 of 3, end of DESIGN: pages and their questions agreed, before building" },
+      "BUILD->PUBLICATION":        { "gates": ["report", "reconciliation", "tooling", "user_confirmation"], "_checkpoint": "3 of 3, before publishing" },
       "PUBLICATION->IDLE":         { "gates": ["git-clean"] },
       "DESIGN->PROFILING":         { "gates": [], "_note": "the design asks a question the profiling did not answer" },
       "BUILD->DESIGN":             { "gates": [], "_note": "building shows the agreed layout is not viable. Without this edge the only exits were abandoning or drifting from the agreement in silence" }

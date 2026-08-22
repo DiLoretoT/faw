@@ -155,8 +155,8 @@ What happens:
    depends on what is being built: storage mode of the semantic model, grain,
    where each derived calculation is resolved, load strategy, naming convention.
    They are raised and justified **even when the user did not mention them and
-   does not know the topic**, because the consequence of getting them wrong gets
-   paid either way, and a default nobody chose is a decision the tool made. Every
+   does not know the topic**, because the consequence of getting them wrong arrives
+   either way, and a default nobody chose is a decision the tool made. Every
    definitive statement about the platform is backed by documentation that was
    read, with its date. Detail in the `design` skill.
 6. **Risks.** What can go wrong and how it will be detected. This is not
@@ -260,7 +260,7 @@ the way.
 What publication looks like depends on where the record has to end up, and the
 working folder does not have to be the repository that backs the workspace.
 
-**When the change travels through git** — the working folder is the backing
+**When the change travels through git.** The working folder is the backing
 repository, or a clone of it:
 1. Check the complete diff with `scripts/verify_diff.py`. It fails if protected
    metadata is touched without being declared.
@@ -268,7 +268,7 @@ repository, or a clone of it:
 3. Pull request, following [`client-surface.md`](client-surface.md).
 4. Merge, and sync the workspace.
 
-**When it does not** — the work reached the workspace through authorized writes,
+**When it does not.** The work reached the workspace through authorized writes,
 and the backing repository, if any, syncs on the service side:
 1. Verify the deployed state against what was declared, with the verifier that
    applies.

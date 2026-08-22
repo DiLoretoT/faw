@@ -45,7 +45,7 @@ would mean rebuilding something, raise it now.** If it is reversible with a
 commit, it does not need the conversation.
 
 Offer that review even when the user did not ask for it and does not know the
-topic, because the consequence of getting it wrong gets paid either way. When they
+topic, because the consequence of getting it wrong arrives either way. When they
 have no formed opinion, do not choose silently for them and do not deliver a
 lecture. Explain in two or three sentences what each option implies **for this
 specific case**, recommend one with its rationale, and move on.

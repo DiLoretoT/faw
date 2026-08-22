@@ -60,7 +60,7 @@ def root(data: dict | None) -> Path | None:
     Every hook needs the same answer, so it is resolved once here. The reason is
     the one stated at the top of this module: a check duplicated per hook is how
     one gate ends up behaving differently from the rest. That had already
-    happened — four hooks called `active()` while `inject_context` inlined the
+    happened, with four hooks called `active()` while `inject_context` inlined the
     same condition, so a fix to one would have missed the other.
     """
     return project.root((data or {}).get("cwd"))

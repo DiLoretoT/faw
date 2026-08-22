@@ -16,7 +16,7 @@
 
 - The text injected on every turn is 23% shorter, from 148 tokens on average to
   113, without dropping an instruction. Claude Code keeps this block in the
-  transcript rather than replacing it, so every word is paid once per turn for
+  transcript rather than replacing it, so every word is resent on every turn for
   the rest of the session. The BUILD rule was repeating what the platform
   tooling line already said; the reply-format line was sending both the
   work-open and the nothing-open form when only one can ever apply; the rest was
@@ -66,8 +66,8 @@
 - The `report` receipt hashes the definition that was built, not only the model.
   With the model alone, a page edited after the gate passed left the receipt
   valid and the report published without being checked again.
-- `MINOR-CHANGE` admits a cosmetic report change, which used to pay the full
-  chain to rename a title. The line is whether the layout agreement would have to
+- `MINOR-CHANGE` admits a cosmetic report change. Renaming a title used to
+  require the whole chain. The line is whether the layout agreement would have to
   change: adding a page or changing what one answers is `REPORT`, moving a visual
   is not.
 - The classification and report design skills cover changing a report that

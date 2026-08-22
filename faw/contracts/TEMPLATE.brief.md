@@ -46,7 +46,7 @@ the MODEL or ARTIFACT tier: note it here and classify it separately.>
 ## Business validation
 
 <Who confirms the numbers are right. A concrete name. If nobody is identified, the
-report can be built but **is not published as production** — it is marked as
+report can be built but **is not published as production**, it is marked as
 exploratory and the pending reconciliation is recorded.>
 
 ## Amendments
