@@ -14,6 +14,14 @@ that narrates on every turn trains the reader to skip it. What goes in is the
 state, the rule for the current phase, and what changes what the agent may do
 without asking.
 
+That rule has a price attached. Claude Code appends this text to every message
+and keeps it in the transcript, so a word added here is paid once per turn for
+the rest of the session, in every session, for everyone. The block measures
+between 80 and 156 tokens depending on tier and phase; treat the upper end as
+the ceiling and cut prose before adding any. There is an upstream issue asking
+for this context to be ephemeral, which would remove the accumulation but not
+the per-turn cost.
+
 Opt-in: it does nothing unless the project has a `.faw/` directory. Installing
 the plugin globally does not push data-platform context into unrelated projects.
 """
@@ -35,10 +43,13 @@ TRANSITIONS = FAW_ROOT / "faw" / "transitions.json"
 # treated as NON-blocking, so FAW would be installed and enforcing nothing.
 # stdout is reconfigured to UTF-8 below anyway, because the ticket title comes
 # from the state and may carry accents.
-STATE_LINE = (
-    "Every reply starts with a state line: `[question]` for a standalone question, "
-    "or `{TIER} - {action} | {ticket}: {title}` when work is open."
-)
+#
+# Two constants rather than one because the alternatives are mutually exclusive:
+# with work open the `[question]` form cannot apply, and with nothing open the
+# form with a ticket cannot. Sending both spent tokens on the branch that was
+# never going to be used.
+STATE_LINE_OPEN = "Start every reply with `{TIER} - {action} | {ticket}: {title}`."
+STATE_LINE_IDLE = "Start every reply with `[question]`."
 
 # What the agent is asked to do about platform tooling. Note what this does NOT
 # do: it does not name a skill, a path or a plugin. Any such list would be a
@@ -52,9 +63,8 @@ STATE_LINE = (
 # That produces a record instead of an assumption, and it stays true regardless
 # of how the vendor reorganizes its catalog.
 PLATFORM_TOOLING = (
-    "Platform tooling: check which official skills or tools for this platform are "
-    "available in this session, and state which one you are using -- or why none of "
-    "them applies. Do not assume the catalog from memory."
+    "Check which official platform tools this session actually has, state which you "
+    "used or why none applied, and do not assume the catalog from memory."
 )
 
 # Where a tier needs a different rule for the same phase. Consulted before
@@ -62,14 +72,13 @@ PLATFORM_TOOLING = (
 RULE_BY_TIER_PHASE = {
     ("REPORT", "PROFILING"):
         "Read-only, over the model the report will consume. Grain of each table, "
-        "measures that already exist, cardinality of what will slice, and the "
-        "business totals the report has to reproduce. Every number with its query. "
-        "If the model cannot be queried from here, hand the queries to the user "
-        "rather than estimating.",
+        "measures that exist, cardinality of what will slice, business totals to "
+        "reproduce. Every number with its query. If the model cannot be queried from "
+        "here, hand the queries to the user rather than estimating.",
     ("REPORT", "DESIGN"):
         "Read the profiling through the business first, then turn it into a layout. "
-        "Every page states which question from the brief it answers. Closes with "
-        "the user agreeing the pages before any of them gets built.",
+        "Every page states which brief question it answers. Closes with the user "
+        "agreeing the pages before any get built.",
 }
 
 RULE_BY_PHASE = {
@@ -78,17 +87,17 @@ RULE_BY_PHASE = {
                       "approval.",
     "PROFILING": "Read-only. Every number comes with the query that produced it. The "
                  "natural key is proven, not copied from a spec.",
-    "DESIGN": "Grain in one sentence, natural key verified, contract file. Before closing, "
-              "review which architecture decisions this work would leave settled and put "
-              "them to the user: the ones nobody discusses are decided by the tool default. "
-              "Closes with the user's approval BEFORE building.",
-    "BUILD": "STEP 0: if the artifact has an official platform skill, read it before "
-             "writing a line. Validations inside the artifact. Report rows AND columns.",
-    "EXECUTION": "Run only what was scoped. Before each write, state table, operation "
-                 "and expected delta; after it, compare the real delta. A job reporting "
-                 "success with zero rows affected is a failure, not a quiet success.",
+    "DESIGN": "Grain in one sentence, natural key verified, contract file. Raise the "
+              "architecture decisions this work would settle even unasked, because a "
+              "default nobody discussed is the tool deciding. Closes with the user's "
+              "approval BEFORE building.",
+    "BUILD": "Validations go inside the artifact, not in a separate script. Report rows "
+             "AND columns.",
+    "EXECUTION": "Run only what was scoped. Before each write state table, operation and "
+                 "expected delta; after it compare the real one. Success with zero rows "
+                 "affected is a failure, not a quiet success.",
     "VALIDATION": "Run by faw-validator, which did not build. It looks to refute, not to "
-                  "confirm. If it fails, work returns to BUILD: it is not patched here.",
+                  "confirm. A failure returns the work to BUILD and is not patched here.",
     "PUBLICATION": "Check the COMPLETE diff. Read rules/client-surface.md before writing the "
                    "pull request. Update the tracker with the resume point.",
 }
@@ -179,13 +188,12 @@ def main() -> int:
     if not st or phase in (None, "IDLE"):
         lines += [
             "[FAW] No classified work.",
-            "Before the first edit, classification has to be closed: assign a tier, define "
-            "what is in and what is NOT, and wait for the user's approval. The skill is "
-            "/faw:classify. The write gate will deny any edit until the classification "
-            "exists.",
+            "Nothing can be edited until classification closes. Assign a tier, define what "
+            "is in and what is NOT, wait for the user's approval. The skill is "
+            "/faw:classify.",
             f"Register with: python {FAW_ROOT / 'scripts' / 'state.py'} start --tier <TIER> "
             f"--title \"<title>\"",
-            STATE_LINE,
+            STATE_LINE_IDLE,
         ]
     else:
         lines.append(f"[FAW] {tier} - {phase} | {ticket}: {title}")
@@ -202,8 +210,8 @@ def main() -> int:
         # that the agent reads it instead of asking again what was answered.
         prior_context = (st or {}).get("context")
         if prior_context:
-            lines.append(f"Context already agreed with the user in {prior_context}: "
-                         f"read it before asking anything that may be there.")
+            lines.append(f"Decisions already agreed with the user are in {prior_context}. "
+                         f"Read it before asking anything that may be there.")
 
         if phase in ("DESIGN", "BUILD"):
             lines.append(PLATFORM_TOOLING)
@@ -214,7 +222,7 @@ def main() -> int:
         # The skills say `python <faw>/scripts/state.py` and nothing resolves
         # <faw> until a denial prints it. One line closes that gap.
         lines.append(f"FAW scripts: {FAW_ROOT / 'scripts'}")
-        lines.append(STATE_LINE)
+        lines.append(STATE_LINE_OPEN)
 
     print(json.dumps({
         "hookSpecificOutput": {

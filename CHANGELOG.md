@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.1.1 - 2026-08-22
+
+### Changed
+
+- The text injected on every turn is 23% shorter, from 148 tokens on average to
+  113, without dropping an instruction. Claude Code keeps this block in the
+  transcript rather than replacing it, so every word is paid once per turn for
+  the rest of the session. The BUILD rule was repeating what the platform
+  tooling line already said; the reply-format line was sending both the
+  work-open and the nothing-open form when only one can ever apply; the rest was
+  written tighter.
+- The design rule in the file now carries the measured ceiling, so the next
+  person adding a line knows what it costs.
+
 ## 4.1.0 - 2026-08-22
 
 ### Added
