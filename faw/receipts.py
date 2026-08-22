@@ -29,10 +29,51 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-RECEIPTS_DIR = Path(".faw") / "receipts"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from faw import project  # noqa: E402
+
+
+def _root() -> Path:
+    """The governed folder, or the current directory when there is none.
+
+    Resolved rather than assumed: a verifier run from a subdirectory used to
+    write its receipt into a `.faw` that the state machine never reads, so the
+    gate stayed closed with the receipt sitting one level down.
+    """
+    return project.root() or Path.cwd()
+
+
+def _receipts_dir() -> Path:
+    return _root() / ".faw" / "receipts"
+
+
+def _open_ticket() -> str | None:
+    """Identifier of the work currently open, or None if there is none.
+
+    Read here rather than passed in by every verifier: the verifiers are
+    standalone scripts that do not know the state machine, and threading the
+    ticket through all of them would leave the one that forgets it silently
+    issuing an unscoped receipt.
+    """
+    log = _root() / ".faw" / "state.jsonl"
+    if not log.exists():
+        return None
+    last = None
+    for line in log.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            last = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+    if not last or last.get("phase") in (None, "IDLE"):
+        return None
+    return last.get("ticket")
 
 
 def _path(gate: str, scope: str | None = None) -> Path:
@@ -45,8 +86,8 @@ def _path(gate: str, scope: str | None = None) -> Path:
     """
     if scope:
         safe = re.sub(r"[^A-Za-z0-9_.\-]", "_", scope)
-        return RECEIPTS_DIR / f"{gate}.{safe}.json"
-    return RECEIPTS_DIR / f"{gate}.json"
+        return _receipts_dir() / f"{gate}.{safe}.json"
+    return _receipts_dir() / f"{gate}.json"
 
 
 def _sha(path: Path) -> str:
@@ -69,13 +110,20 @@ def _commit() -> str | None:
 def issue(gate: str, script: str, inputs: list[Path], detail: str,
           scope: str | None = None) -> Path:
     """Write the receipt of a gate that passed. Called only by the verifiers."""
-    RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
+    _receipts_dir().mkdir(parents=True, exist_ok=True)
     receipt = {
         "gate": gate,
         "result": "PASS",
         "script": script,
         "issued_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "commit": _commit(),
+        # Which work this receipt belongs to. Without it a receipt outlives the
+        # ticket that produced it and satisfies the gate of the next one: a
+        # closed ticket's brief let the following ticket enter BUILD with no
+        # brief of its own, because the file still existed and its hash still
+        # matched. Recorded at issue time so the check can be a comparison
+        # rather than a guess.
+        "ticket": _open_ticket(),
         "inputs": {str(p).replace("\\", "/"): _sha(p) for p in inputs if p.exists()},
         "detail": detail,
     }
@@ -88,12 +136,17 @@ def issue(gate: str, script: str, inputs: list[Path], detail: str,
 
 
 def verify(gate: str, require_current_commit: bool = False,
-           scope: str | None = None) -> tuple[bool, str]:
+           scope: str | None = None,
+           ticket: str | None = None) -> tuple[bool, str]:
     """Validate the receipt of a gate. Returns (passed, reason).
 
     Recomputes the hash of every input: if any of them changed after the receipt
     was issued, it is stale. This is what prevents profiling once and then
     changing the contract without checking again.
+
+    When a ticket is given, the receipt has to belong to it. A receipt is
+    evidence that a specific piece of work was checked, and one that survives
+    its ticket stops being evidence of anything.
     """
     path = _path(gate, scope)
     if not path.exists():
@@ -112,8 +165,22 @@ def verify(gate: str, require_current_commit: bool = False,
         return False, (f"the receipt in '{path.name}' declares scope "
                        f"'{r.get('scope')}', not '{scope}'")
 
+    if ticket:
+        owner = r.get("ticket")
+        if owner is None:
+            return False, (f"the receipt in '{path.name}' does not say which ticket it "
+                           f"belongs to, so it cannot be claimed by {ticket}. Run the "
+                           f"verifier again with the work open")
+        if owner != ticket:
+            return False, (f"the receipt in '{path.name}' belongs to ticket {owner}, not "
+                           f"{ticket}. Run the verifier for this work")
+
     for file_name, recorded_hash in (r.get("inputs") or {}).items():
+        # Inputs are recorded relative to the governed folder, so they resolve
+        # against it rather than against wherever the shell happens to stand.
         p = Path(file_name)
+        if not p.is_absolute():
+            p = _root() / file_name
         if not p.exists():
             return False, f"stale receipt: the input '{file_name}' no longer exists"
         if _sha(p) != recorded_hash:

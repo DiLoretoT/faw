@@ -1,5 +1,25 @@
 # Changelog
 
+## 4.0.2 - 2026-08-20
+
+### Fixed
+
+- A receipt outlived the ticket that produced it and satisfied the gate of the
+  next one. Receipts recorded what was checked and over which files, but not for
+  which ticket, and the machine gates never asked. With the input file still on
+  disk and its hash still matching, a closed ticket's brief let the following
+  ticket enter BUILD having produced no brief of its own. Reproduced before
+  fixing. Receipts now record their ticket and are rejected for a different one.
+- Verifiers resolved their paths against the current directory rather than the
+  governed folder, so one run from a subdirectory wrote its receipt into a
+  `.faw` the state machine never reads. The fix in 4.0.1 reached the state
+  machine and the hooks but not the verifiers.
+
+### Added
+
+- A self-check case covering receipt scope, verified in both directions: it
+  fails against the code that had the defect and passes against the fix.
+
 ## 4.0.1 - 2026-08-20
 
 ### Fixed
