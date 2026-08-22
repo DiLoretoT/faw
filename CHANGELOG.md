@@ -39,6 +39,9 @@
   `--ticket`. In `verify_report.py`, `--report` is now that same name and the
   folder that was built is `--definition`, so the flag means the same thing in
   all three.
+- The `report` receipt hashes the definition that was built, not only the model.
+  With the model alone, a page edited after the gate passed left the receipt
+  valid and the report published without being checked again.
 - `MINOR-CHANGE` admits a cosmetic report change, which used to pay the full
   chain to rename a title. The line is whether the layout agreement would have to
   change: adding a page or changing what one answers is `REPORT`, moving a visual

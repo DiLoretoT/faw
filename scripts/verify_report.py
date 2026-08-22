@@ -260,10 +260,14 @@ def main() -> int:
 
     detail = (f"{len(json_files)} files, {len(used_fields)} fields referenced, "
               f"{len(orphans)} orphans, {len(filters)} filters to review")
-    inputs = [args.model]
+    # The definition files are inputs of the receipt, not only the model. With
+    # the model alone, a page edited after the gate passed left the receipt valid
+    # and the report published without being checked again -- which is the same
+    # drift the layout comparison exists to catch, moved one step later.
+    inputs = [args.model, *sorted(json_files)]
     if layout_path is not None:
         detail += ", pages match the layout agreement"
-        inputs.append(args.layout)
+        inputs.append(layout_path)
     if passed:
         receipts.issue("report", "verify_report.py", inputs, detail)
     else:
