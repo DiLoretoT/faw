@@ -7,9 +7,9 @@ description: The FAW profiling phase. Measures the source against real data and 
 
 Phase 2 of FAW. **No design until there are numbers.**
 
-In software, requirements come from people. In data work, half of them are in the
-source and are only discovered by measuring. Every question answered by assumption
-produces an artifact that runs and returns the wrong thing.
+Half of the requirements are in the source and are only discovered by measuring.
+Every question answered by assumption produces an artifact that runs and returns
+the wrong thing.
 
 ## The rule that governs this phase
 
