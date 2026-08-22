@@ -124,7 +124,7 @@ PER_TABLE_GATES = {"contract", "schema"}
 
 
 def _verify_per_table(name: str, definition: dict, declared: dict[str, str],
-                      failures: list[str]) -> None:
+                      failures: list[str], ticket: str | None = None) -> None:
     """Check a per-table gate.
 
     The expected set is declared by the agent on the move:
@@ -146,7 +146,7 @@ def _verify_per_table(name: str, definition: dict, declared: dict[str, str],
             failures.append(f"{name}: the 'tables' declaration is empty")
             return
         for t in tables:
-            ok, reason = receipts.verify(name, scope=t)
+            ok, reason = receipts.verify(name, scope=t, ticket=ticket)
             if not ok:
                 failures.append(f"{name} [{t}]: {reason}{suffix}")
         return
@@ -163,13 +163,13 @@ def _verify_per_table(name: str, definition: dict, declared: dict[str, str],
         return
 
     if len(scopes) == 1:
-        ok, reason = receipts.verify(name, scope=scopes[0])
+        ok, reason = receipts.verify(name, scope=scopes[0], ticket=ticket)
         if not ok:
             failures.append(f"{name} [{scopes[0]}]: {reason}{suffix}")
         return
 
     # Legacy: single receipt with no scope, issued by an earlier version.
-    ok, reason = receipts.verify(name)
+    ok, reason = receipts.verify(name, ticket=ticket)
     if not ok:
         failures.append(f"{name}: {reason}{suffix}")
 
@@ -212,12 +212,20 @@ def verify_gates(names: list[str], rules: dict, declared: dict[str, str],
                       "git repository and holds no serialized artifacts to protect")
                 continue
             if name in PER_TABLE_GATES:
-                _verify_per_table(name, d, declared, failures)
+                _verify_per_table(name, d, declared, failures, ticket)
                 continue
             # The rest require the receipt their verifier issued. These are NOT
             # satisfied with a string: this program recomputes the hash of the
             # inputs and rejects the receipt if any of them changed.
-            ok, reason = receipts.verify(name, require_current_commit=(name == "metadata"))
+            #
+            # The ticket is passed for the same reason the hashes are recomputed.
+            # A receipt proves that a specific piece of work was checked, and one
+            # that outlives its ticket was satisfying the gate of the next one:
+            # a closed ticket's brief let the following ticket enter BUILD with
+            # no brief of its own, because the file still existed and the hash
+            # still matched.
+            ok, reason = receipts.verify(name, require_current_commit=(name == "metadata"),
+                                         ticket=ticket)
             if not ok:
                 failures.append(f"{name}: {reason}  [run: {d.get('verifies')}]")
             continue
@@ -226,7 +234,7 @@ def verify_gates(names: list[str], rules: dict, declared: dict[str, str],
             # `contract` is issued by its own verifier; the rest are documents
             # whose path the agent declares.
             if name in PER_TABLE_GATES:
-                _verify_per_table(name, d, declared, failures)
+                _verify_per_table(name, d, declared, failures, ticket)
                 continue
             path = declared.get(name)
             if not path:

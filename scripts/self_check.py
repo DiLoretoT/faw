@@ -533,7 +533,51 @@ def caso_agentes(tmp: Path) -> tuple[int, int]:
     return ok, bad
 
 
+def caso_recibo_por_ticket(tmp: Path) -> tuple[int, int]:
+    """A receipt belongs to the work that produced it, and dies with it.
+
+    Regression case. Receipts recorded what was checked and over which files, but
+    not for which ticket, and the machine gates never asked. A closed ticket left
+    its receipt behind, the input file still existed and its hash still matched,
+    so the next ticket crossed the same gate having produced nothing. A REPORT
+    entered BUILD with no brief of its own.
+
+    should-pass: a ticket moves with the receipt it produced itself.
+    should-fail: the next ticket tries to cross on the previous one's receipt.
+    """
+    folder = tmp / "folder"
+    (folder / ".faw").mkdir(parents=True)
+    _git(folder, "init", "-q")
+    _git(folder, "config", "user.email", "selfcheck@faw.local")
+    _git(folder, "config", "user.name", "selfcheck")
+
+    def state(*args: str) -> int:
+        return _run("state.py", list(args), folder)
+
+    if state("start", "--tier", "REPORT", "--title", "first report") != 0:
+        raise RuntimeError("could not start the first synthetic ticket")
+    _write(folder / "docs" / "faw" / "T-001" / "brief.md", GOOD_BRIEF)
+    if _run("verify_brief.py", ["--ticket", "T-001"], folder) != 0:
+        raise RuntimeError("the synthetic brief did not pass its own verifier")
+
+    # Should pass: T-001 crosses on the receipt T-001 produced.
+    ok = state("move", "--to", "BUILD", "--gate", "user_confirmation=agreed")
+
+    # T-001 is gone and T-002 opens with no brief of its own. The receipt from
+    # T-001 is still on disk and its input still matches.
+    (folder / ".faw" / "state.jsonl").write_text(json.dumps({
+        "ts": "2026-01-01T00:00:00+00:00", "event": "start", "ticket": "T-002",
+        "tier": "REPORT", "title": "second report", "phase": "CLASSIFICATION",
+        "from_phase": "IDLE",
+    }) + "\n", encoding="utf-8")
+
+    # Should fail: the gate must not accept another ticket's receipt.
+    bad = state("move", "--to", "BUILD", "--gate", "user_confirmation=agreed")
+    return ok, bad
+
+
 CASOS = [
+    ("state.py (receipt scoped to its ticket)", caso_recibo_por_ticket),
     ("agents frontmatter", caso_agentes),
     ("verify_contract.py", caso_contrato),
     ("verify_diff.py", caso_diff),

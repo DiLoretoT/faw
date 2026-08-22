@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "_note": "Gates with strength 'machine' are checked by a script and cannot be satisfied by declaring them. Gates with strength 'receipt' require that a file exists. Gates with strength 'declaration' are the agent's own record: the state machine requires that the statement exists before the move, not that it is true.",
+  "_note": "Gates with strength 'machine' are checked by a script and cannot be satisfied by declaring them. Gates with strength 'receipt' require that a file exists. A receipt is tied to the ticket that produced it and is not accepted for a different one. Gates with strength 'declaration' are the agent's own record: the state machine requires that the statement exists before the move, not that it is true.",
 
   "gates": {
     "profile":           { "strength": "receipt",     "verifies": "docs/faw/<ticket>/profiling.md exists and contains the queries behind its numbers" },

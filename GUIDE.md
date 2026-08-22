@@ -234,10 +234,17 @@ The main ones:
 
 ### The receipts
 
-A verifier that passes issues a receipt with the hash of what it checked. The state
-machine recomputes those hashes before allowing the move, so a receipt issued over
-an earlier version of the file no longer counts. Without this, "I already verified
-it" would be a claim about the past that cannot be checked.
+A verifier that passes issues a receipt with the hash of what it checked and the
+ticket it belongs to. The state machine recomputes those hashes before allowing the
+move, so a receipt issued over an earlier version of the file no longer counts.
+Without this, "I already verified it" would be a claim about the past that cannot be
+checked.
+
+The ticket matters as much as the hash. A receipt is evidence that one specific
+piece of work was checked, and one that outlives its ticket stops being evidence of
+anything: with the file still on disk and its hash still matching, the next piece of
+work crossed the same gate having produced nothing. A report entered build with no
+brief of its own that way.
 
 Gates that work table by table issue one receipt per table. When a ticket covers
 several, the scope is declared on the move and the gate requires the receipt of each
