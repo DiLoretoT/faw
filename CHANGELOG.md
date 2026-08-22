@@ -1,5 +1,22 @@
 # Changelog
 
+## 4.0.3 - 2026-08-22
+
+### Fixed
+
+- Any ticket that did not declare its tables on the move raised a `NameError`
+  instead of checking the `contract` and `schema` gates. Moving receipts into the
+  governed folder in 4.0.2 turned a module constant into a function and left
+  three references to the old name in the helper that lists issued receipts.
+  That helper is what resolves the scope when the move carries no
+  `--gate tables=`, which is the single-table case and the common one.
+
+### Added
+
+- A self-check case for the undeclared-scope branch, verified in both
+  directions. The existing multi-table case always declares `tables=`, so it
+  exercised the other branch and stayed green while this one was broken.
+
 ## 4.0.2 - 2026-08-20
 
 ### Fixed
