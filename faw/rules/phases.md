@@ -48,7 +48,9 @@ answered**. Restate in one line what was decided and ask only for what is new.
 **Closing, checkpoint 1 of 3:** the user confirms tier and scope. This is where
 how much process the rest will cost gets decided.
 
-**If the tier is `REPORT`, classification includes the brief.** Building a report
+**If the tier is `REPORT`, classification includes the brief**, and the tier then
+continues through profiling and design like any other. What changes is what each
+one measures and produces; see the `report-design` skill. Building a report
 does not start without agreeing **with the user** what it exists for. Objective,
 audience, the questions it has to answer, what is out of scope, the data source,
 and who validates the numbers. It is filled in at `docs/faw/<ticket>/brief.md`

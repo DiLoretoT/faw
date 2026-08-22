@@ -1,5 +1,39 @@
 # Changelog
 
+## 4.1.0 - 2026-08-20
+
+### Added
+
+- The REPORT tier gains profiling and design. A report used to go straight from
+  the brief into building, so it was built on data nobody had measured and pages
+  nobody had agreed. It now profiles the semantic model it will consume and
+  agrees a layout first.
+- The `layout` gate, checked by `verify_layout.py`. What it verifies is the
+  layout **agreement** and not the layout: that every page states which question
+  from the brief it answers, and that no template placeholder survived. Whether
+  the layout is any good is not machine-verifiable and the gate does not claim
+  it is.
+- `verify_report.py --layout` cross-checks the pages that were built against the
+  ones that were agreed. Without it the agreement was read once on the way into
+  building and never again, so a report could drift from it and still publish.
+- Back edges `BUILD->DESIGN` and `DESIGN->PROFILING` for REPORT. A layout that
+  building shows to be unviable previously had only two exits: abandoning, or
+  drifting from the agreement in silence.
+- `report-design` skill, covering the three passes that make up profiling and
+  design for a report: what is in the data, what those data mean to the business,
+  and what gets built. The passes accumulate in one context on purpose, because
+  restarting each one loses what the previous found.
+- `TEMPLATE.layout.md`, and self-check cases for both new checks.
+
+### Changed
+
+- The three checkpoints are no longer described as fixed phases. Which ones they
+  are depends on the tier: for REPORT they are the end of classification, design
+  and build. Three remains the ceiling.
+- The per-turn context takes the tier into account, not only the phase. A report
+  in DESIGN was being told "grain in one sentence, natural key verified", which
+  is table guidance, and what arrives every turn outweighs what is read once.
+
 ## 4.0.2 - 2026-08-20
 
 ### Fixed

@@ -561,7 +561,7 @@ def caso_recibo_por_ticket(tmp: Path) -> tuple[int, int]:
         raise RuntimeError("the synthetic brief did not pass its own verifier")
 
     # Should pass: T-001 crosses on the receipt T-001 produced.
-    ok = state("move", "--to", "BUILD", "--gate", "user_confirmation=agreed")
+    ok = state("move", "--to", "PROFILING", "--gate", "user_confirmation=agreed")
 
     # T-001 is gone and T-002 opens with no brief of its own. The receipt from
     # T-001 is still on disk and its input still matches.
@@ -572,11 +572,124 @@ def caso_recibo_por_ticket(tmp: Path) -> tuple[int, int]:
     }) + "\n", encoding="utf-8")
 
     # Should fail: the gate must not accept another ticket's receipt.
-    bad = state("move", "--to", "BUILD", "--gate", "user_confirmation=agreed")
+    bad = state("move", "--to", "PROFILING", "--gate", "user_confirmation=agreed")
+    return ok, bad
+
+
+GOOD_LAYOUT = """# Layout agreement: CANARY-L
+
+## What the profiling changed
+
+Measuring the model showed the overdue bucket is stored on the balance fact and
+not on the customer dimension, so the breakdown by bucket does not need the
+customer table at all.
+
+## Pages
+
+### 1. Weekly escalation
+
+- **Answers:** Which accounts crossed 90 days overdue this week?
+- **For:** The finance lead, every Monday, to decide what to escalate.
+- **Shows:** Overdue balance by customer at account grain, filtered to the bucket
+  that crossed this week.
+- **Interaction:** Drill through to the account detail page, cross-filtering from
+  the bucket slicer.
+
+### 2. Overdue trend
+
+- **Answers:** How does the overdue total move month over month?
+- **For:** The finance lead and the collections analysts, monthly review.
+- **Shows:** Overdue total by month with the previous year as reference.
+- **Interaction:** The month selection persists into the escalation page.
+
+## What is not a page
+
+The concentration question is answered inside the trend page with a top ten
+breakdown, because it is read together with the trend and not on its own.
+
+## Navigation
+
+Landing is the escalation page. Both pages reach the account detail through drill
+through, and the detail page returns to whichever page opened it.
+
+## Decisions that will be asked about later
+
+A matrix rather than a chart on the escalation page, because the finance lead
+copies the account numbers out of it.
+"""
+
+# Known defect: two pages declared and only one says which question it answers.
+# The page that answers nothing is the one this gate exists to catch, and a size
+# check alone would have accepted the document.
+BAD_LAYOUT = """# Layout agreement: CANARY-L
+
+## Pages
+
+### 1. Weekly escalation
+
+- **Answers:** Which accounts crossed 90 days overdue this week?
+- **For:** The finance lead, every Monday, to decide what to escalate.
+- **Shows:** Overdue balance by customer at account grain, filtered to the bucket.
+- **Interaction:** Drill through to the account detail page.
+
+### 2. Extra analysis
+
+- **For:** Whoever wants to look around the data a bit.
+- **Shows:** Several measures broken down by several dimensions.
+- **Interaction:** The usual slicers.
+
+## Navigation
+
+Landing is the escalation page and the other one is reachable from the tab strip.
+"""
+
+
+def caso_layout(tmp: Path) -> tuple[int, int]:
+    good = tmp / "good-layout.md"
+    bad = tmp / "bad-layout.md"
+    _write(good, GOOD_LAYOUT)
+    _write(bad, BAD_LAYOUT)
+    ok = _run("verify_layout.py", ["--layout", str(good)], tmp)
+    bad_rc = _run("verify_layout.py", ["--layout", str(bad)], tmp)
+    return ok, bad_rc
+
+
+def caso_reporte_vs_layout(tmp: Path) -> tuple[int, int]:
+    """The built report is compared against the pages that were agreed.
+
+    Checked only on the way into BUILD, a layout agreement is read once and never
+    again, so a report that drifts from it publishes with nothing noticing. This
+    is the case that keeps the agreement a contract rather than a plan.
+    """
+    layout = tmp / "layout.md"
+    _write(layout, GOOD_LAYOUT)
+
+    model = tmp / "model.bim.json"
+    _write(model, json.dumps(MODEL_BIM_OK, indent=2))
+
+    def _report(name: str, pages: list[str]) -> Path:
+        root = tmp / name
+        for page in pages:
+            _write(root / "definition" / "pages" / page / "page.json",
+                   json.dumps({"displayName": page}))
+        _write(root / "definition" / "report.json", json.dumps(VISUAL_OK))
+        return root
+
+    # Should pass: the pages built are the pages agreed.
+    ok = _run("verify_report.py",
+              ["--report", str(_report("matching", ["Weekly escalation", "Overdue trend"])),
+               "--model", str(model), "--layout", str(layout)], tmp)
+
+    # Should fail: a page nobody agreed, and one that was agreed and never built.
+    bad = _run("verify_report.py",
+               ["--report", str(_report("drifted", ["Weekly escalation", "Scratch page"])),
+                "--model", str(model), "--layout", str(layout)], tmp)
     return ok, bad
 
 
 CASOS = [
+    ("verify_layout.py", caso_layout),
+    ("verify_report.py (built pages vs layout)", caso_reporte_vs_layout),
     ("state.py (receipt scoped to its ticket)", caso_recibo_por_ticket),
     ("agents frontmatter", caso_agentes),
     ("verify_contract.py", caso_contrato),

@@ -12,14 +12,15 @@
     "tooling":           { "strength": "declaration", "verifies": "which official platform skill or tool was used for this artifact, or why none applied. A declaration, because no hook can tell whether documentation was read. What it does buy: the choice is stated and recorded instead of assumed, and a wrong one becomes visible in the log rather than in the output." },
     "schema":            { "strength": "machine",     "verifies": "scripts/verify_contract.py <contract>.yml --schema <snapshot>.json — for EVERY table in the ticket; with more than one, declare the scope on the move: --gate tables=t1,t2,..." },
     "model":             { "strength": "machine",     "verifies": "scripts/verify_model.py" },
-    "report":            { "strength": "machine",     "verifies": "scripts/verify_report.py" },
+    "report":            { "strength": "machine",     "verifies": "scripts/verify_report.py — with --layout it also cross-checks the built pages against the ones the layout agreement declared" },
+    "layout":            { "strength": "machine",     "verifies": "scripts/verify_layout.py. Reads the layout agreement document, not the report. What it checks is that every page declares which question it answers and that no template placeholder survived, the same way the brief gate checks the brief. Whether the layout is any good is not machine-verifiable and this gate does not claim it is." },
     "reconciliation":    { "strength": "declaration", "verifies": "the agent's record, naming who is accountable" },
     "metadata":          { "strength": "machine",     "verifies": "scripts/verify_diff.py" },
     "git-clean":         { "strength": "machine",     "verifies": "git status --porcelain is empty" },
     "user_confirmation": { "strength": "declaration", "verifies": "the user gave explicit approval at this checkpoint" }
   },
 
-  "_note_checkpoints": "user_confirmation marks the 3 points where the agent STOPS and waits: end of CLASSIFICATION, end of DESIGN, end of VALIDATION. Every other transition advances on its own as soon as its gates pass, showing a summary but not waiting for approval. Authorizations to write to the platform (the 'authorization' gate) are a separate gate, asked for every time, and do not count against this budget.",
+  "_note_checkpoints": "user_confirmation marks the 3 points where the agent STOPS and waits. Which phases those are depends on the tier: for ARTIFACT and MODEL they are the end of CLASSIFICATION, DESIGN and VALIDATION; for REPORT, the end of CLASSIFICATION, DESIGN and BUILD. Three is the ceiling, not a quota, and the shorter tiers keep fewer. Every other transition advances on its own as soon as its gates pass, showing a summary but not waiting for approval. Authorizations to write to the platform (the 'authorization' gate) are a separate gate, asked for every time, and do not count against this budget.",
 
   "no_abandon": ["PUBLICATION"],
   "_note_no_abandon": "Publication cannot be abandoned: nothing is left to decide there, only steps left to finish. It can be paused, because waiting for a pull request review is part of publishing.",
@@ -53,10 +54,14 @@
     },
 
     "REPORT": {
-      "_note": "BUILD is unconstrained — layout, visual choice and hierarchy are not machine-verifiable — but entering BUILD is not: 'free building' does not mean 'nothing needs to be agreed'. Without an objective and an audience agreed with the user, scope ends up inferred from the semantic model instead of decided. The 'brief' gate closes that. The silent failure of this layer is the development filter left behind and persisted in the report definition: numbers that are credible and filtered.",
-      "CLASSIFICATION->BUILD":   { "gates": ["brief", "user_confirmation"], "_checkpoint": "1 of 2 — end of CLASSIFICATION, before building" },
-      "BUILD->PUBLICATION":      { "gates": ["report", "reconciliation", "tooling", "user_confirmation"], "_checkpoint": "2 of 2 — before publishing" },
-      "PUBLICATION->IDLE":       { "gates": ["git-clean"] }
+      "_note": "How a report is built inside BUILD stays unconstrained: the visual choices and the arrangement are judgment, and a gate over them could not be satisfied honestly. What is not unconstrained is arriving there. A report gets built on data nobody measured and pages nobody agreed unless something asks first, so this tier profiles the model it is going to consume and agrees a layout before building. The two silent failures it closes are the report that is precise about a question nobody asked, and the development filter left behind and persisted in the definition: numbers that are credible and filtered.",
+      "CLASSIFICATION->PROFILING": { "gates": ["brief", "user_confirmation"], "_checkpoint": "1 of 3 — end of CLASSIFICATION: objective, audience and questions agreed" },
+      "PROFILING->DESIGN":         { "gates": ["profile"], "_checkpoint": null },
+      "DESIGN->BUILD":             { "gates": ["layout", "user_confirmation"], "_checkpoint": "2 of 3 — end of DESIGN: pages and their questions agreed, before building" },
+      "BUILD->PUBLICATION":        { "gates": ["report", "reconciliation", "tooling", "user_confirmation"], "_checkpoint": "3 of 3 — before publishing" },
+      "PUBLICATION->IDLE":         { "gates": ["git-clean"] },
+      "DESIGN->PROFILING":         { "gates": [], "_note": "the design asks a question the profiling did not answer" },
+      "BUILD->DESIGN":             { "gates": [], "_note": "building shows the agreed layout is not viable. Without this edge the only exits were abandoning or drifting from the agreement in silence" }
     },
 
     "INCIDENT": {

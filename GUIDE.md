@@ -88,15 +88,20 @@ adjustment does not cost the same as a new semantic model.
 | **OPERATION** | Running what already exists | Classification, execution |
 | **ARTIFACT** | A table, notebook or pipeline | The six phases |
 | **MODEL** | A semantic model | The six, verified through its definition |
-| **REPORT** | A report | Agreed brief, build, publication |
+| **REPORT** | A report | Brief, profiling, layout agreement, build, publication |
 | **INCIDENT** | Something broken | Fast lane with a measured diagnosis |
 
 `MODEL` and `REPORT` are separate because what a machine can verify differs. In a
 semantic model, relationships, storage mode and column properties are read through
-an API and compared against what was declared. In a report, the layout and the
-choice of each visual are not verifiable that way, and development is iterative by
-nature. Charging a report the gates of a model would create a gate impossible to
-satisfy honestly, and those should not exist.
+an API and compared against what was declared. In a report, the choice of each
+visual and how it reads are judgment, and a gate over them could not be satisfied
+honestly.
+
+What that does not excuse is arriving at a report with nothing agreed. `REPORT`
+profiles the model it is going to consume and agrees a layout before building,
+and both gates verify documents rather than taste: that every page states which
+question from the brief it answers, and that the pages built are the pages
+agreed.
 
 `MINOR-CHANGE` has an explicit guardrail. If the change touches schema, business
 logic or the consumption layer, or exceeds roughly thirty lines, it gets
@@ -136,7 +141,9 @@ MINOR-CHANGE:
   CLASSIFICATION ──────────────────────► BUILD ──────► PUBLICATION → IDLE
 
 REPORT:
-  CLASSIFICATION ──brief──► BUILD ─────────────────► PUBLICATION → IDLE
+  CLASSIFICATION ──brief──► PROFILING ──► DESIGN ──layout──► BUILD ──► PUBLICATION → IDLE
+       ▲(1)                              ▲(2)                  │  ▲(3)
+       └── confirmation ─────────────────┘         not viable  └──┘ back to DESIGN
 
 OPERATION:
   CLASSIFICATION ──scope──► EXECUTION ──delta──► IDLE
@@ -171,6 +178,14 @@ was used gets stated.
 authorization asked at the moment of writing, and closes by comparing the real
 delta against the expected one.
 
+In the report tier, profiling and design read differently. Profiling measures the
+semantic model the report will consume rather than a source table: grain, existing
+measures, cardinality of what will slice, and the totals the report has to
+reproduce. Design goes through the data, then through what those data mean to the
+audience, then into a layout of pages where each one names the question it
+answers. The three passes accumulate in the same context on purpose, because
+restarting each one loses what the previous found.
+
 **Validation.** Run by an agent that did not build, instructed to refute rather
 than confirm. If it fails, the work returns to build. It is not patched here,
 because the patch would be written by whoever is validating and nobody would be
@@ -187,9 +202,11 @@ The process stops and waits for the user at exactly three moments, and they are 
 on purpose. A method that asks all the time teaches people to answer yes without
 reading.
 
-1. **Before profiling**: the tier and the scope are agreed.
+1. **Before profiling**: the tier and the scope are agreed. For a report, the
+   objective, the audience and the questions it answers.
 2. **Before building**: the grain, the key and the architecture decisions are
-   agreed. This is where a wrong decision costs the least.
+   agreed. For a report, the pages and which question each one answers. This is
+   where a wrong decision costs the least.
 3. **Before publishing**: the verdict is agreed.
 
 The shorter tiers keep fewer stops. An operation has a single one, before
@@ -227,6 +244,7 @@ The main ones:
 | `platform` | That platform syntax literals have precedent or resolve | machine |
 | `git-clean` | That no uncommitted changes remain when closing | machine |
 | `brief` | That the report brief has content and is not the template | machine |
+| `layout` | That every page of the report states which question it answers | machine |
 | `profile` | That the profiling receipt exists and belongs to the open ticket | receipt |
 | `tooling` | Which official platform tooling was used, or why none applied | declaration |
 | `user_confirmation` | That the user approved | declaration |
@@ -540,8 +558,9 @@ Detail in [`faw/rules/microsoft-skills.md`](faw/rules/microsoft-skills.md).
 
 **Skills** (`skills/`): instructions loaded when a phase or a task starts.
 `configure` defines the project profile. `classify`, `profile`, `design` and
-`validate` run phases. `backlog` and `roadmap` answer what comes next and where
-things are going. `architecture` audits the decisions
+`validate` run phases, and `report-design` runs profiling and design for the
+report tier, where both work differently. `backlog` and `roadmap` answer what
+comes next and where things are going. `architecture` audits the decisions
 that are expensive to reverse. They do not enforce anything by themselves.
 
 **Verifiers** (`scripts/`): each one checks a fact and issues a receipt.

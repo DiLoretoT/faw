@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -70,6 +71,77 @@ def _find_fields(node, found: set[str]) -> None:
             _find_fields(item, found)
 
 
+RE_LAYOUT_PAGE = re.compile(r"^###\s+(?:\d+[\.\)]\s*)?(.+)$", re.MULTILINE)
+
+
+def _declared_pages(layout: Path) -> list[str]:
+    """Page names from the layout agreement, in declaration order."""
+    text = layout.read_text(encoding="utf-8", errors="replace")
+    return [m.strip() for m in RE_LAYOUT_PAGE.findall(text) if m.strip()]
+
+
+def _built_pages(report: Path) -> list[str]:
+    """Page names found in the report project.
+
+    Read from the folder structure rather than from one schema field, because the
+    shape of the definition changes between versions and the folders do not. A
+    page whose display name cannot be read falls back to its folder name instead
+    of being skipped: dropping it silently would make the comparison claim more
+    than it knows.
+    """
+    pages_dir = next((d for d in report.rglob("pages") if d.is_dir()), None)
+    if pages_dir is None:
+        return []
+    names = []
+    for child in sorted(d for d in pages_dir.iterdir() if d.is_dir()):
+        display = None
+        for candidate in child.glob("*.json"):
+            try:
+                data = json.loads(candidate.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            if isinstance(data, dict) and data.get("displayName"):
+                display = str(data["displayName"])
+                break
+        names.append(display or child.name)
+    return names
+
+
+def _compare_layout(report: Path, layout: Path) -> list[str]:
+    """Built pages against agreed pages. Returns the findings.
+
+    This is what turns the layout agreement from a plan into a contract. Checked
+    only on the way into BUILD, the agreement is read once and never again, so a
+    report that drifts from what was agreed publishes with nothing noticing.
+    """
+    declared = _declared_pages(layout)
+    built = _built_pages(report)
+    findings = []
+
+    if not declared:
+        findings.append(f"the layout agreement at {layout} declares no page")
+        return findings
+    if not built:
+        findings.append(f"no page found under {report}, so it cannot be compared "
+                        f"against the {len(declared)} agreed")
+        return findings
+
+    def norm(s: str) -> str:
+        return re.sub(r"[^a-z0-9]", "", s.lower())
+
+    built_norm = {norm(b): b for b in built}
+    declared_norm = {norm(d): d for d in declared}
+
+    for key, name in declared_norm.items():
+        if key not in built_norm:
+            findings.append(f"page agreed and not built: '{name}'")
+    for key, name in built_norm.items():
+        if key not in declared_norm:
+            findings.append(f"page built and not agreed: '{name}'. Either it answers a "
+                            f"question the agreement missed, or nobody asked for it")
+    return findings
+
+
 def model_fields(model: dict) -> set[str]:
     m = model.get("model", model)
     fields: set[str] = set()
@@ -92,6 +164,8 @@ def main() -> int:
     p.add_argument("--report", type=Path, required=True,
                    help="report project folder (.Report)")
     p.add_argument("--model", type=Path, required=True, help="model definition (JSON)")
+    p.add_argument("--layout", type=Path,
+                   help="layout agreement to cross-check the built pages against")
     args = p.parse_args()
 
     if not args.report.exists() or not args.report.is_dir():
@@ -130,7 +204,23 @@ def main() -> int:
     print(f"  JSON files inspected: {len(json_files)}")
     print(f"  fields and measures referenced (heuristic): {len(used_fields)}")
 
-    has_problem = False
+    layout_findings: list[str] = []
+    if args.layout:
+        layout_path = (args.layout if args.layout.is_absolute()
+                       else Path.cwd() / args.layout)
+        if not layout_path.exists():
+            print(f"ERROR: {layout_path} does not exist", file=sys.stderr)
+            return 2
+        layout_findings = _compare_layout(args.report, layout_path)
+        print(f"  pages agreed: {len(_declared_pages(layout_path))}   "
+              f"built: {len(_built_pages(args.report))}")
+
+    has_problem = bool(layout_findings)
+
+    if layout_findings:
+        print("\n  [ERROR] the report does not match the layout agreement:")
+        for f in layout_findings:
+            print(f"      {f}")
 
     if orphans:
         has_problem = True
@@ -160,8 +250,12 @@ def main() -> int:
 
     detail = (f"{len(json_files)} files, {len(used_fields)} fields referenced, "
               f"{len(orphans)} orphans, {len(filters)} filters to review")
+    inputs = [args.model]
+    if args.layout:
+        detail += ", pages match the layout agreement"
+        inputs.append(args.layout)
     if passed:
-        receipts.issue("report", "verify_report.py", [args.model], detail)
+        receipts.issue("report", "verify_report.py", inputs, detail)
     else:
         receipts.invalidate("report")
 
