@@ -1,5 +1,35 @@
 # Changelog
 
+## 4.1.2 - 2026-08-25
+
+### Fixed
+
+- The `report` gate accepted a PBIR definition with real schema violations --
+  a `Tooltips` role holding a bare `Column` where the format requires a
+  `Measure` or `Aggregation`, among others `powerbi-report-author validate`
+  catches. It published through the Fabric service without error and the
+  field silently did nothing, which against a real project was a drillthrough
+  field added specifically to enable a menu entry that never appeared. The
+  gate now shells out to the CLI and fails on any reported error. If the CLI
+  is not on PATH, the check is reported as **not run**, never as passed.
+
+### Added
+
+- `report-design` now documents two drillthrough traps and one narrative trap,
+  each confirmed against a real project and Microsoft's own documentation
+  (dated in the skill): the drillthrough field has to be the exact field
+  projected in the source visual, not a same-table stand-in; a drillthrough
+  page authored as PBIR directly, with no Desktop session in the loop, never
+  gets the back button Desktop adds automatically; an `aiNarratives` visual
+  with no content configured renders blank with nothing in the file to flag
+  it.
+- The closing of DESIGN now recommends a second, independent look before the
+  third checkpoint, the same principle behind MODEL's validator applied to a
+  tier that cannot be gated the same way: a report built and reviewed by the
+  same session missed a color literal without its `#`, a card at the wrong
+  scale, and a measure anchored to the latest snapshot reused where every
+  point of a trend needed its own.
+
 ## 4.1.1 - 2026-08-22
 
 ### Changed
