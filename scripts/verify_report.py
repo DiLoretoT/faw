@@ -8,9 +8,19 @@ publishes numbers that are credible and filtered. It is the exact equivalent of
 the null foreign key: invisible in the view you would use to check it, because
 nobody opens the filter definition before publishing.
 
-This script does TWO things of different strength, on purpose:
+This script does THREE things of different strength, on purpose:
 
-1. **Dump of persisted filters** (a receipt: a human reviews it). It walks every
+1. **Schema validity** (machine, objective). Shells out to the official
+   `powerbi-report-author validate` CLI and fails the gate on any reported error.
+   This is not a judgment about the report -- it is the same kind of check as
+   `verify_contract.py` against a column list: the JSON either matches the
+   documented PBIR schema or it does not. A report can publish through the
+   service with a role mismatch that only surfaces as a blank visual or a missing
+   context-menu entry; this catches it before that. If the CLI is not on PATH,
+   this check is skipped and reported as **not run**, never as passed -- see
+   principle 1.
+
+2. **Dump of persisted filters** (a receipt: a human reviews it). It walks every
    JSON file of the report project looking for any "filters" key, without
    assuming a particular version of the schema. That is deliberately
    format-agnostic: the report definition format is relatively new, and there is
@@ -18,7 +28,7 @@ This script does TWO things of different strength, on purpose:
    relying on it for a real case, check it against the current documentation, as
    principle 6 requires.
 
-2. **Fields referenced per visual, against the model** (a heuristic, first
+3. **Fields referenced per visual, against the model** (a heuristic, first
    iteration). It looks for field-reference patterns in the JSON files and cross
    checks them against the tables, columns and measures of the model definition.
    This needs tuning against a real project the first time it is used in earnest,
@@ -28,8 +38,10 @@ Usage
 -----
   python verify_report.py --report "<report name>"       --definition MyReport.Report --model model.bim.json
 
-Exit: 0 if it finds no unreviewed orphan fields, 1 if there is something for a
-human to look at, 2 if the inputs are wrong.
+Exit: 0 if the schema validates (or the CLI could not run) and the report matches
+its layout agreement, 1 if either finds something wrong, 2 if the inputs are
+wrong. Orphan fields and persisted filters are printed for review but do not fail
+the gate on their own -- they remain a heuristic, per the note above.
 """
 
 from __future__ import annotations
@@ -37,11 +49,49 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from faw import project, receipts  # noqa: E402
+
+
+def _run_schema_validation(definition: Path) -> tuple[str, list[str]]:
+    """Run the official `powerbi-report-author validate` CLI against the report.
+
+    Returns (status, errors). status is one of "passed", "failed", "not_run".
+    "not_run" means the CLI was not found -- a limit of the environment, not a
+    finding about the report, and it must never be read as "passed" (principle 1).
+    """
+    exe = shutil.which("powerbi-report-author")
+    if exe is None:
+        return "not_run", []
+
+    try:
+        proc = subprocess.run(
+            [exe, "validate", str(definition)],
+            capture_output=True, text=True, timeout=120, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return "not_run", [f"could not run the CLI: {e}"]
+
+    try:
+        payload = json.loads(proc.stdout).get("data", {})
+    except json.JSONDecodeError:
+        return "not_run", [f"CLI output was not valid JSON: {proc.stdout[:300]}"]
+
+    if payload.get("result") == "failed":
+        errors = []
+        for code, info in payload.get("diagnostics", {}).items():
+            if info.get("severity") != "error":
+                continue
+            for item in info.get("items", []):
+                errors.append(f"{code}: {item.get('message', item)}")
+        return "failed", errors
+
+    return "passed", []
 
 
 def _find_filters(node, file_path: str, found: list[dict], trail: str = "") -> None:
@@ -204,9 +254,27 @@ def main() -> int:
     available = model_fields(model)
     orphans = sorted(c for c in used_fields if c not in available)
 
+    schema_status, schema_errors = _run_schema_validation(args.definition)
+
     print(f"\n=== Report: {args.report} ===")
     print(f"  JSON files inspected: {len(json_files)}")
     print(f"  fields and measures referenced (heuristic): {len(used_fields)}")
+
+    if schema_status == "not_run":
+        print("\n  [NOT RUN] powerbi-report-author CLI not found on PATH -- schema "
+              "validity was not checked. This is a gap in the environment, not a "
+              "pass. Install the CLI or run it manually before trusting this report.")
+    elif schema_status == "failed":
+        print(f"\n  [ERROR] powerbi-report-author validate found {len(schema_errors)} "
+              f"schema error(s) -- these are objective PBIR violations (a role that "
+              f"expects a measure holding a column, a malformed reference), not a "
+              f"judgment about the report:")
+        for e in schema_errors[:20]:
+            print(f"      {e}")
+        if len(schema_errors) > 20:
+            print(f"      ... and {len(schema_errors) - 20} more")
+    else:
+        print("\n  schema validity (powerbi-report-author validate): PASS")
 
     layout_findings: list[str] = []
     layout_path = None
@@ -225,7 +293,7 @@ def main() -> int:
         print(f"  pages agreed: {len(_declared_pages(layout_path))}   "
               f"built: {len(_built_pages(args.definition))}")
 
-    has_problem = bool(layout_findings)
+    has_problem = bool(layout_findings) or schema_status == "failed"
 
     if layout_findings:
         print("\n  [ERROR] the report does not match the layout agreement:")
@@ -259,7 +327,8 @@ def main() -> int:
     print(f"\n  {'PASS' if passed else 'FAIL'}\n")
 
     detail = (f"{len(json_files)} files, {len(used_fields)} fields referenced, "
-              f"{len(orphans)} orphans, {len(filters)} filters to review")
+              f"{len(orphans)} orphans, {len(filters)} filters to review, "
+              f"schema validation: {schema_status}")
     # The definition files are inputs of the receipt, not only the model. With
     # the model alone, a page edited after the gate passed left the receipt valid
     # and the report published without being checked again -- which is the same

@@ -125,6 +125,29 @@ elsewhere. Slicers that persist where following the thread across pages makes
 sense, and reset where it does not. A report where nothing can be clicked is a
 printed sheet on a screen.
 
+Two traps found building drillthrough by hand, against real projects, confirmed
+against [Microsoft's own documentation](https://learn.microsoft.com/en-us/power-bi/create-reports/desktop-drillthrough)
+(read 2026-08-25):
+
+- **The drillthrough field has to be projected in the source visual, the exact
+  field, not a same-table stand-in.** A bar chart categorized by `razon_social`
+  does not offer drillthrough into a page filtered on `tercero_key`, even though
+  both live on the same dimension: "the field must exist in both the source
+  visual and the drillthrough filter well". If the visual shows a label column
+  and the filter needs the key, add the key to that visual's Tooltips role
+  (as a `Measure` or `Aggregation` -- see the schema check below) so it is
+  present without changing what is displayed.
+- **The back button is not part of the page definition.** Power BI Desktop adds
+  it automatically at the moment the field is dragged into the drillthrough well.
+  A drillthrough page authored directly as PBIR (no Desktop session in the loop)
+  never gets one unless it is added explicitly: an `actionButton` visual with
+  `visualContainerObjects.visualLink.type = "Back"`.
+
+A third trap, same source of the bug -- authoring without a Desktop session to
+catch it: an `aiNarratives` visual with no content configured renders blank in
+view mode with nothing in the file to flag it. Either author it completely or
+leave it out; a half-configured narrative looks identical to a broken one.
+
 **Simplicity is a result, not a starting point.** One page that answers one
 question well beats a page with six visuals that answers none. What is not read
 gets removed.
@@ -143,6 +166,20 @@ The phase closes with the user confirming the layout agreement. That is the
 second of the three checkpoints in this tier, and what gets agreed there is the
 extent of the report: how many pages, what each one answers, and what was left
 out.
+
+**Before the third checkpoint (BUILD to PUBLICATION), get a second look.** A
+report cannot be gated the way a model is -- layout and visual choice are
+judgment, and a gate over them could not be satisfied honestly, which is why
+this tier has no validator agent of its own. That absence is not a reason to
+skip a second pair of eyes; it is the reason to ask for one deliberately instead
+of assuming the schema check covers it. Against real projects, an independent
+review caught what building did not: a color literal missing its `#`, a card
+formatted at the wrong scale, a measure anchored to the latest snapshot reused
+in a trend chart where every point showed the same value. None of these fail a
+gate. All of them are wrong on screen. The reviewer should not be the session
+that built the report, for the same reason the MODEL validator is never the
+builder: whoever decided the layout was right will look for confirmation, not
+for what is wrong with it.
 
 The closing question says what will be built if they confirm, not just which
 phase comes next (principle 14).
