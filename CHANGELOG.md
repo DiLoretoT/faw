@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.1.3 - 2026-09-01
+
+### Changed
+
+- Two passages argued a point about data work by asserting its opposite about
+  software: that a wrong result there usually has a test that can express it,
+  and that its requirements come from people. Both claims are wrong often
+  enough to weaken the argument they were supporting, which stands on its own.
+  What survives is the claim about data work, without the comparison.
+- The name is written `FAW: Fabric Agentic Workflow`, and em dashes are gone
+  from every file. Twelve of them were in `transitions.json`, which reaches the
+  model on every turn through the legal-exits line.
+- Cost is no longer written as a metaphor. Process is not paid, checkpoints are
+  not paid, and a wrong decision does not get paid either way, it arrives
+  either way. Eight passages said it the other way.
+
 ## 4.1.2 - 2026-08-25
 
 ### Fixed
@@ -36,7 +52,7 @@
 
 - The text injected on every turn is 23% shorter, from 148 tokens on average to
   113, without dropping an instruction. Claude Code keeps this block in the
-  transcript rather than replacing it, so every word is paid once per turn for
+  transcript rather than replacing it, so every word is resent on every turn for
   the rest of the session. The BUILD rule was repeating what the platform
   tooling line already said; the reply-format line was sending both the
   work-open and the nothing-open form when only one can ever apply; the rest was
@@ -86,8 +102,8 @@
 - The `report` receipt hashes the definition that was built, not only the model.
   With the model alone, a page edited after the gate passed left the receipt
   valid and the report published without being checked again.
-- `MINOR-CHANGE` admits a cosmetic report change, which used to pay the full
-  chain to rename a title. The line is whether the layout agreement would have to
+- `MINOR-CHANGE` admits a cosmetic report change. Renaming a title used to
+  require the whole chain. The line is whether the layout agreement would have to
   change: adding a page or changing what one answers is `REPORT`, moving a visual
   is not.
 - The classification and report design skills cover changing a report that

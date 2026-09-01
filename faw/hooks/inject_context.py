@@ -15,7 +15,7 @@ state, the rule for the current phase, and what changes what the agent may do
 without asking.
 
 That rule has a price attached. Claude Code appends this text to every message
-and keeps it in the transcript, so a word added here is paid once per turn for
+and keeps it in the transcript, so a word added here is resent on every turn for
 the rest of the session, in every session, for everyone. The block measures
 between 80 and 156 tokens depending on tier and phase; treat the upper end as
 the ceiling and cut prose before adding any. There is an upstream issue asking

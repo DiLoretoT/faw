@@ -475,7 +475,7 @@ def caso_raiz_gobernada(tmp: Path) -> tuple[int, int]:
 
     This is the case that motivated `project.root()`. Before it, governance
     depended on `.faw/` being a direct child of the reported directory: a session
-    standing one level down was ungoverned, and the hook said nothing about it —
+    standing one level down was ungoverned, and the hook said nothing about it,
     exit 0 with no output, indistinguishable from a hook that evaluated and
     allowed. That is the failure mode principle 4 forbids, so it gets a case.
     """

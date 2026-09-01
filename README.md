@@ -1,4 +1,4 @@
-# FAW — Fabric Agentic Workflow
+# FAW: Fabric Agentic Workflow
 
 A way of working with Claude Code on Microsoft Fabric that the tool enforces, so it
 does not depend on remembering it. Phases in order, gates that scripts verify, hooks
@@ -92,9 +92,9 @@ promised.
 
 ## Where it comes from
 
-FAW is inspired by [DAW — Dilux Agentic Workflow](https://github.com/soydiloreto/dilux-agentic-workflow),
+FAW is inspired by [DAW: Dilux Agentic Workflow](https://github.com/soydiloreto/dilux-agentic-workflow),
 a phased pipeline with gates for software development. Four ideas come from there.
-Gates enforced outside the model. Tiers, so a small change does not pay a large
+Gates enforced outside the model. Tiers, so a small change does not run a large
 process. An honest scale of how strong each gate is. And that whoever validates did
 not build.
 

@@ -1,4 +1,4 @@
-# FAW — Complete guide
+# FAW: Complete guide
 
 Reference document for the method. It explains what problem it solves, how it is
 built, and how it is operated. The rules the agent loads on every turn live
@@ -17,12 +17,10 @@ why.
 That variability is what FAW addresses. It does not promise to save time; it
 reduces the surface where an error passes without anyone reviewing it.
 
-The reason it matters more here than in application development is what a data
-artifact is. In software, a wrong result usually has a test that can express it. A
-function is given inputs and its output is compared against what it should be. In
-data work, **the correct result is not verifiable by the code**. No test knows
-whether 2,705 rows is the number that should have come out. That is only known by
-measuring against the source, and only if somebody measures.
+The reason is what a data artifact is. **The correct result is not verifiable by
+the code.** No test knows whether 2,705 rows is the number that should have come
+out. That is only known by measuring against the source, and only if somebody
+measures.
 
 Four concrete ways this shows up:
 
@@ -77,8 +75,8 @@ backs it. A gate presented as stronger than it is turns the rest into suggestion
 ## 3. The seven classifications
 
 The first thing that happens to any request is that it gets a tier. The tier
-determines how much process that work pays, and it exists so a three-line
-adjustment does not cost the same as a new semantic model.
+determines how much process that work runs through, and it exists so a three-line
+adjustment does not go through the same steps as a new semantic model.
 
 | Tier | What it is | Route |
 |---|---|---|
@@ -110,7 +108,7 @@ reclassified to `ARTIFACT`. This is not left to judgment in the moment.
 `OPERATION` covers running existing artifacts without changing their definition. A
 backfill, a rerun of a failed pipeline, an on-demand refresh. None of that is
 building, and forcing it through six phases would push people to skip the method
-exactly when they touch production data. It pays one checkpoint, where what runs,
+exactly when they touch production data. It has one checkpoint, where what runs,
 against what, and the expected delta get agreed, and it closes by comparing the
 real delta against the expected one. Changing code or schema reclassifies;
 diagnosing something broken is an `INCIDENT`.
@@ -416,8 +414,8 @@ that injects itself everywhere is not opt-in.
 
 The cost of that quiet is that "not governed" looks exactly like "governed and
 nothing to say". Both are exit 0 with no output. If the working folder is not where
-you think it is — the deliverables in one tree and the backing repository in another
-is the normal case, not an edge one — the method is off and nothing announces it.
+you think it is, with the deliverables in one tree and the backing repository in another
+is the normal case rather than an edge one, the method is off and nothing announces it.
 
 `state.py status` is the answer to that, and it names which folder is governing, or
 says plainly that none is. Run it when starting work in a folder for the first time.
@@ -493,7 +491,7 @@ mean rebuilding something, raise it now; if it is reversible with a commit, it d
 not need the conversation.
 
 That review gets offered even when the user did not ask and does not know the topic,
-because the consequence of getting it wrong gets paid either way. When they have no
+because the consequence of getting it wrong arrives either way. When they have no
 formed opinion, do not choose silently and do not lecture. Explain what each option
 implies for that specific case, recommend one with its rationale, and move on.
 
