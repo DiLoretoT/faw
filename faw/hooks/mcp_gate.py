@@ -43,9 +43,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import common  # noqa: E402
 import project  # noqa: E402
 
-# Read-only verbs, compared against the tool name with the server prefix removed.
-# The list is deliberately conservative: adding a missing read verb costs one
-# line, while removing one that actually wrote costs a bad write nobody saw.
+# Read-only verbs, matched against the tokens of the tool name. Adding a missing
+# read verb costs one line; treating one that actually writes as a read costs a
+# bad write nobody saw, so the list only grows on evidence.
 READ_VERBS = (
     "list", "get", "read", "search", "describe", "show", "query", "fetch",
     "find", "docs", "inspect", "preview", "count", "check", "validate",
@@ -70,6 +70,21 @@ EXPLICIT_WRITES = {
     "apply_migration",
 }
 
+# Verbs that modify the platform. This list exists so that a namespace in front
+# of the verb does not turn a write into an unknown: `livy_create_session` has
+# to resolve to `create` and not to "no verb found".
+#
+# `create`, `close` and `cancel` are here as a decision, not by omission.
+# Starting compute costs money, and closing a session or cancelling a running
+# statement affects whoever was using it. None of the three is measuring the
+# source as it stands, which is what PROFILING allows.
+WRITE_VERBS = (
+    "create", "delete", "update", "add", "remove", "upload", "run", "execute",
+    "apply", "refresh", "move", "rename", "reset", "modify", "set", "write",
+    "close", "cancel", "pause", "restore", "deploy", "merge", "revert",
+    "start", "stop", "publish", "import", "export",
+)
+
 # The gate is limited to servers that operate the data platform. A project may
 # have a calendar or mail server connected, and stopping those calls because of
 # the phase of a data task would be noise with no failure behind it. Compared as
@@ -90,14 +105,37 @@ def _split(tool: str) -> tuple[str, str] | None:
 
 
 def is_read(tool_name: str) -> bool:
-    """Classify an MCP tool. When in doubt, it is not a read."""
-    n = tool_name.lower()
+    """Classify an MCP tool. When in doubt, it is not a read.
+
+    The verb is not always the first token. Several families put a namespace in
+    front of it -- `livy_list_sessions`, `datafactory_list-pipelines`,
+    `onelake_list_tables` -- and reading only the first token classified every
+    one of them as a write. An EXPLORATION ticket could then not list the Livy
+    sessions it needed in order to profile, which contradicts what PROFILING is
+    for. Found in use, on Livy, after the ticket had already been abandoned for
+    it.
+
+    So the tokens are scanned from the left and the first RECOGNISED verb
+    decides. A token that is neither a read verb nor a write verb is a
+    namespace and gets skipped. Reaching the end without finding a verb means
+    the name says nothing about what the tool does, and that is a write.
+
+    Hyphen and underscore are both separators, because the two servers in use
+    disagree on which one they use and the same name appears written both ways.
+    """
+    n = tool_name.lower().replace("-", "_")
     if n in EXPLICIT_WRITES:
         return False
-    if n in EXPLICIT_READS:
+    # Suffix and not equality: a namespace in front of a known read leaves the
+    # name ending in it, as in `datafactory_execute_query`.
+    if n in EXPLICIT_READS or any(n.endswith("_" + r) for r in EXPLICIT_READS):
         return True
-    first_verb = n.split("_", 1)[0]
-    return first_verb in READ_VERBS
+    for token in n.split("_"):
+        if token in READ_VERBS:
+            return True
+        if token in WRITE_VERBS:
+            return False
+    return False
 
 
 def main() -> int:

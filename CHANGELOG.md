@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.1.3 - 2026-09-01
+
+### Fixed
+
+- The MCP gate read only the first token of a tool name to decide whether it
+  writes, so every family that puts a namespace before the verb classified as a
+  write. `livy_list_sessions`, `livy_get_session_status`,
+  `datafactory_list-pipelines` and `onelake_list_tables` are reads, and an
+  EXPLORATION ticket in PROFILING could not run any of them. Measuring the
+  source is what that phase is for, so the gate was blocking the work it exists
+  to protect. Found in use, on Livy, after a ticket had been abandoned over it.
+- The tokens are now scanned from the left and the first recognised verb
+  decides, with hyphen and underscore both treated as separators because the
+  two Fabric servers disagree on which one they use. A name that reaches the end
+  with no verb in it is still a write.
+
+### Changed
+
+- `create`, `close` and `cancel` are writes by decision rather than by
+  omission. Starting compute costs money, and closing a session or cancelling a
+  running statement affects whoever was using it. None of the three is measuring
+  the source as it stands.
+
 ## 4.1.2 - 2026-08-22
 
 ### Changed
