@@ -749,6 +749,114 @@ def caso_layout(tmp: Path) -> tuple[int, int]:
     return ok, bad_rc
 
 
+def _minimal_valid_report(root: Path, pages: list[str], name: str = "canary",
+                           visuals: dict[str, dict] | None = None) -> Path:
+    """A minimal but schema-valid PBIR report, so the schema check inside
+    verify_report.py exercises the real CLI instead of failing on scaffolding
+    a fixture never had a reason to omit. The files below are the ones
+    `powerbi-report-author validate` requires before it even looks at page
+    content. `visuals`, if given, maps a page name to one visual.json body to
+    drop under that page's `visuals/<id>/` folder.
+    """
+    _write(root / ".platform", json.dumps({
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+        "metadata": {"type": "Report", "displayName": name},
+        "config": {"version": "2.0", "logicalId": "00000000-0000-0000-0000-000000000000"},
+    }))
+    _write(root / "definition.pbir", json.dumps({
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
+        "version": "4.0",
+        "datasetReference": {"byPath": {"path": "../Canary.SemanticModel"}},
+    }))
+    _write(root / "definition" / "version.json", json.dumps({
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/versionMetadata/1.0.0/schema.json",
+        "version": "2.0.0",
+    }))
+    for page in pages:
+        _write(root / "definition" / "pages" / page / "page.json",
+               json.dumps({
+                   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+                   "name": page, "displayName": page,
+                   "displayOption": "FitToPage", "height": 720, "width": 1280,
+               }))
+        visual_body = (visuals or {}).get(page)
+        if visual_body is not None:
+            _write(root / "definition" / "pages" / page / "visuals" / "v1" / "visual.json",
+                   json.dumps(visual_body))
+    _write(root / "definition" / "pages" / "pages.json", json.dumps({
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+        "pageOrder": pages, "activePageName": pages[0],
+    }))
+    _write(root / "definition" / "report.json", json.dumps({
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.3.0/schema.json",
+        "themeCollection": {"baseTheme": {
+            "name": "CY24SU06", "type": "SharedResources",
+            "reportVersionAtImport": {"visual": "2.11.0", "report": "3.3.0", "page": "2.1.0"},
+        }},
+    }))
+    return root
+
+
+def caso_reporte_schema(tmp: Path) -> tuple[int, int]:
+    """The `report` gate now also runs `powerbi-report-author validate`.
+
+    Found against a real project (Bandex, 25-ago-2026): a `Tooltips` role
+    holding a bare `Column` instead of a `Measure`/`Aggregation` publishes
+    through the Fabric service without error, and the field silently does not
+    do what it was added for -- in that case, enabling drillthrough. The CLI
+    catches it; nothing before this did.
+    """
+    model = tmp / "model.bim.json"
+    _write(model, json.dumps(MODEL_BIM_OK, indent=2))
+
+    valid_visual = {
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+        "name": "v1", "position": {"x": 0, "y": 0, "z": 0, "height": 200, "width": 300},
+        "visual": {"visualType": "card", "query": {"queryState": {"Values": {"projections": [
+            {"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "Fact"}},
+                                    "Property": "total_ventas"}},
+             "queryRef": "Fact.total_ventas", "nativeQueryRef": "total_ventas"},
+        ]}}}},
+    }
+    invalid_visual = {
+        "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
+        "name": "v1", "position": {"x": 0, "y": 0, "z": 0, "height": 200, "width": 300},
+        "visual": {"visualType": "barChart", "query": {"queryState": {
+            "Category": {"projections": [
+                {"field": {"Column": {"Expression": {"SourceRef": {"Entity": "Fact"}},
+                                       "Property": "fecha_id"}},
+                 "queryRef": "Fact.fecha_id", "nativeQueryRef": "fecha_id"},
+            ]},
+            "Y": {"projections": [
+                {"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "Fact"}},
+                                        "Property": "total_ventas"}},
+                 "queryRef": "Fact.total_ventas", "nativeQueryRef": "total_ventas"},
+            ]},
+            # The defect: a bare Column in a Measure-only role. It publishes
+            # through the service without error and just does not do what it
+            # was added for -- see the module docstring's "Found against a real
+            # project" note.
+            "Tooltips": {"projections": [
+                {"field": {"Column": {"Expression": {"SourceRef": {"Entity": "Fact"}},
+                                       "Property": "proveedor_key"}},
+                 "queryRef": "Fact.proveedor_key", "nativeQueryRef": "proveedor_key"},
+            ]},
+        }}},
+    }
+
+    ok = _run("verify_report.py",
+              ["--report", "canary",
+               "--definition", str(_minimal_valid_report(
+                   tmp / "ok", ["Page"], visuals={"Page": valid_visual})),
+               "--model", str(model)], tmp)
+    bad = _run("verify_report.py",
+               ["--report", "canary",
+                "--definition", str(_minimal_valid_report(
+                    tmp / "bad", ["Page"], visuals={"Page": invalid_visual})),
+                "--model", str(model)], tmp)
+    return ok, bad
+
+
 def caso_reporte_vs_layout(tmp: Path) -> tuple[int, int]:
     """The built report is compared against the pages that were agreed.
 
@@ -763,12 +871,7 @@ def caso_reporte_vs_layout(tmp: Path) -> tuple[int, int]:
     _write(model, json.dumps(MODEL_BIM_OK, indent=2))
 
     def _report(name: str, pages: list[str]) -> Path:
-        root = tmp / name
-        for page in pages:
-            _write(root / "definition" / "pages" / page / "page.json",
-                   json.dumps({"displayName": page}))
-        _write(root / "definition" / "report.json", json.dumps(VISUAL_OK))
-        return root
+        return _minimal_valid_report(tmp / name, pages, name=name)
 
     # Should pass: the pages built are the pages agreed.
     ok = _run("verify_report.py",
@@ -786,6 +889,7 @@ def caso_reporte_vs_layout(tmp: Path) -> tuple[int, int]:
 
 CASOS = [
     ("verify_layout.py", caso_layout),
+    ("verify_report.py (schema validation)", caso_reporte_schema),
     ("verify_report.py (built pages vs layout)", caso_reporte_vs_layout),
     ("state.py (receipt scoped to its ticket)", caso_recibo_por_ticket),
     ("agents frontmatter", caso_agentes),
