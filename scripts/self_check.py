@@ -470,6 +470,53 @@ def caso_plataforma(tmp: Path) -> tuple[int, int]:
     return ok, bad_rc
 
 
+
+def caso_mcp_verbo_tras_namespace(tmp: Path) -> tuple[int, int]:
+    """A read stays readable when a namespace comes before the verb.
+
+    Regression case. The MCP gate read only the first token of the tool name, so
+    every family that puts a namespace in front of the verb classified as a
+    write: `livy_list_sessions`, `datafactory_list-pipelines`,
+    `onelake_list_tables`. An EXPLORATION ticket in PROFILING could not list the
+    Livy sessions it needed in order to measure anything, which is the opposite
+    of what that phase is for. It was found after a ticket had been abandoned
+    over it.
+
+    should-pass: listing Livy sessions during PROFILING is allowed.
+    should-fail: creating a Livy session during PROFILING is denied, because
+    starting compute is not measuring the source as it stands.
+    """
+    folder = tmp / "folder"
+    (folder / ".faw").mkdir(parents=True)
+    _write(folder / ".faw" / "state.jsonl", json.dumps({
+        "ticket": "T-001", "tier": "EXPLORATION", "phase": "PROFILING",
+        "title": "case", "ts": "2026-01-01T00:00:00+00:00",
+    }) + "\n")
+
+    def decision(tool: str) -> str:
+        out = _hook("mcp_gate.py", {"cwd": str(folder), "tool_name": tool,
+                                    "tool_input": {}})
+        if not out:
+            return "allow"
+        try:
+            d = json.loads(out)
+        except json.JSONDecodeError:
+            return "allow"
+        return (d.get("hookSpecificOutput") or d).get("permissionDecision", "allow")
+
+    lecturas = ("mcp__ms-fabric-mcp__livy_list_sessions",
+                "mcp__ms-fabric-mcp__livy_get_session_status",
+                "mcp__fabric-mcp-server__datafactory_list-pipelines",
+                "mcp__fabric-mcp-server__onelake_list_tables")
+    ok = 0 if all(decision(t) == "allow" for t in lecturas) else 1
+
+    escrituras = ("mcp__ms-fabric-mcp__livy_create_session",
+                  "mcp__ms-fabric-mcp__livy_run_statement",
+                  "mcp__ms-fabric-mcp__create_lakehouse")
+    bad_rc = 1 if all(decision(t) == "deny" for t in escrituras) else 0
+    return ok, bad_rc
+
+
 def caso_raiz_gobernada(tmp: Path) -> tuple[int, int]:
     """The governed folder is found from a subdirectory, and only from inside it.
 
@@ -855,6 +902,7 @@ CASOS = [
     ("state.py (contract multi-table)", caso_estado_contrato_multitabla),
     ("state.py (contract, one table, no declaration)", caso_contrato_una_tabla_sin_declarar),
     ("hooks (governed root resolution)", caso_raiz_gobernada),
+    ("mcp_gate.py (verb after a namespace)", caso_mcp_verbo_tras_namespace),
 ]
 
 
